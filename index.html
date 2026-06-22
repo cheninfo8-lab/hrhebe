@@ -3,782 +3,634 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>HR Attendance Analytics</title>
+  <title>HR Attendance</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Sarabun:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
   <style>
     :root {
-      --bg: #f0f2f5; --surface: #ffffff; --surface2: #f7f8fa;
-      --border: #e3e7ed; --border2: #cdd3dc;
-      --text: #1a2035; --text2: #4a5568; --muted: #8b96a8;
-      --accent: #2d4a7a; --accent-lt: #e8edf5; --accent-tx: #2d4a7a;
-      --c-ok: #166534;   --bg-ok: #f0fdf4;   --bd-ok: #bbf7d0;
-      --c-late: #92400e; --bg-late: #fffbeb; --bd-late: #fde68a;
-      --c-miss: #9a3412; --bg-miss: #fff7ed; --bd-miss: #fed7aa;
-      --c-abs: #991b1b;  --bg-abs: #fef2f2;  --bd-abs: #fecaca;
-      --c-lv: #1e3a8a;   --bg-lv: #eff6ff;   --bd-lv: #bfdbfe;
-      --c-hol: #374151;  --bg-hol: #f9fafb;  --bd-hol: #e5e7eb;
+      --ink:     #0f1923;
+      --ink2:    #3d4f61;
+      --muted:   #8a98a8;
+      --line:    #e4e9ef;
+      --bg:      #f3f6f9;
+      --surface: #ffffff;
+      --blue:    #1a56db;
+      --blue-lt: #eff4ff;
+      --red:     #c0392b;
+      --red-lt:  #fff5f5;
+      --red-bd:  #f5c6c2;
+      --green:   #166534;
+      --green-lt:#f0fdf4;
+      --green-bd:#bbf7d0;
+      --amber:   #92400e;
+      --amber-lt:#fffbeb;
+      --amber-bd:#fde68a;
     }
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     html { font-size: 14px; }
-    body { font-family: 'Sarabun', 'Inter', sans-serif; background: var(--bg); color: var(--text); line-height: 1.5; padding: 20px 24px; }
-    ::-webkit-scrollbar { width: 5px; height: 5px; }
-    ::-webkit-scrollbar-track { background: var(--surface2); }
-    ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+    body {
+      font-family: 'IBM Plex Sans Thai', sans-serif;
+      background: var(--bg);
+      color: var(--ink);
+      min-height: 100vh;
+    }
+    ::-webkit-scrollbar { width: 4px; height: 4px; }
+    ::-webkit-scrollbar-thumb { background: var(--line); border-radius: 2px; }
 
-    .card  { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; }
-    .panel { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+    /* ── Layout ── */
+    .topbar {
+      background: var(--ink);
+      color: #fff;
+      padding: 0 28px;
+      height: 52px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .topbar-brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 14px;
+      font-weight: 600;
+      letter-spacing: -.01em;
+    }
+    .topbar-brand span { color: #7ea8f8; font-weight: 400; font-size: 12px; margin-left: 6px; }
+    .main { max-width: 1200px; margin: 0 auto; padding: 24px 20px; display: flex; flex-direction: column; gap: 20px; }
 
-    /* Stat cards */
-    .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; cursor: pointer; transition: box-shadow .15s, border-color .15s, transform .12s; padding: 14px 16px; text-align: center; }
-    .stat-card:hover { box-shadow: 0 4px 12px rgba(45,74,122,.10); border-color: var(--accent); transform: translateY(-1px); }
-    .stat-card.active { border-color: var(--accent); background: var(--accent-lt); box-shadow: 0 0 0 3px rgba(45,74,122,.12); }
-    .stat-label { font-size: 10px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
-    .stat-value { font-size: 22px; font-weight: 700; margin-top: 2px; font-family: 'Inter', sans-serif; }
+    /* ── Upload ── */
+    .upload-zone {
+      border: 1.5px dashed var(--line);
+      border-radius: 12px;
+      background: var(--surface);
+      padding: 48px 24px;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color .15s, background .15s;
+    }
+    .upload-zone:hover, .upload-zone.drag-over { border-color: var(--blue); background: var(--blue-lt); }
+    .upload-icon { width: 40px; height: 40px; background: var(--blue-lt); border-radius: 10px; display: flex; align-items: center; justify-content: center; margin: 0 auto 14px; }
+    .upload-icon svg { color: var(--blue); }
+    .upload-title { font-size: 15px; font-weight: 600; color: var(--ink); }
+    .upload-sub   { font-size: 12px; color: var(--muted); margin-top: 6px; line-height: 1.6; }
 
-    /* Tabs */
-    .tab-bar { display: flex; border-bottom: 1px solid var(--border); background: var(--surface2); padding: 0 16px; }
-    .tab-btn { padding: 11px 18px; font-size: 13px; font-weight: 500; border: none; background: none; cursor: pointer; color: var(--muted); border-bottom: 2px solid transparent; margin-bottom: -1px; transition: color .15s, border-color .15s; font-family: 'Sarabun', sans-serif; }
-    .tab-btn:hover { color: var(--text2); }
-    .tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); font-weight: 600; }
+    /* ── Stat strip ── */
+    .stat-strip { display: flex; gap: 12px; }
+    .stat-box {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 14px 20px;
+      min-width: 140px;
+      cursor: pointer;
+      transition: border-color .15s, box-shadow .12s;
+    }
+    .stat-box:hover { border-color: var(--blue); box-shadow: 0 2px 8px rgba(26,86,219,.10); }
+    .stat-box.active { border-color: var(--blue); background: var(--blue-lt); }
+    .stat-box .label { font-size: 10px; font-weight: 600; letter-spacing: .07em; text-transform: uppercase; color: var(--muted); }
+    .stat-box .value { font-size: 26px; font-weight: 600; margin-top: 4px; font-family: 'IBM Plex Mono', monospace; }
+    .stat-box.red   .value { color: var(--red); }
+    .stat-box.green .value { color: var(--green); }
 
-    /* Form controls */
-    input, select { background: var(--surface); border: 1px solid var(--border2); color: var(--text); border-radius: 7px; padding: 7px 11px; font-size: 13px; outline: none; transition: border-color .15s, box-shadow .15s; font-family: 'Sarabun', sans-serif; }
-    input:focus, select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(45,74,122,.10); }
-    input::placeholder { color: var(--muted); }
+    /* ── Panel ── */
+    .panel { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
 
-    /* Buttons */
-    .btn { border-radius: 7px; font-weight: 600; font-size: 13px; padding: 7px 16px; cursor: pointer; transition: all .15s; font-family: 'Sarabun', sans-serif; border: 1px solid transparent; display: inline-flex; align-items: center; gap: 6px; }
-    .btn-primary { background: var(--accent); color: #fff; border-color: var(--accent); }
-    .btn-primary:hover { background: #1e3560; }
-    .btn-ghost { background: var(--surface); color: var(--text2); border-color: var(--border2); }
-    .btn-ghost:hover { border-color: var(--accent); color: var(--accent); }
-    .btn-success { background: #166534; color: #fff; border-color: #166534; }
-    .btn-success:hover { background: #14532d; }
-    .btn-danger { background: #fef2f2; color: #991b1b; border-color: #fecaca; }
+    /* ── Toolbar ── */
+    .toolbar {
+      padding: 10px 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      border-bottom: 1px solid var(--line);
+      flex-wrap: wrap;
+    }
+    .search-wrap { position: relative; flex: 1; min-width: 200px; max-width: 320px; }
+    .search-wrap svg { position: absolute; left: 9px; top: 50%; transform: translateY(-50%); color: var(--muted); pointer-events: none; }
+    .search-wrap input { width: 100%; padding: 7px 10px 7px 32px; border: 1px solid var(--line); border-radius: 7px; font-size: 13px; font-family: inherit; outline: none; background: var(--bg); color: var(--ink); transition: border-color .15s; }
+    .search-wrap input:focus { border-color: var(--blue); background: var(--surface); }
+    .search-wrap input::placeholder { color: var(--muted); }
 
-    /* Badges */
-    .badge { display: inline-block; padding: 2px 9px; border-radius: 99px; font-size: 11px; font-weight: 600; border: 1px solid; white-space: nowrap; }
-    .badge-normal  { background: var(--bg-ok);   color: var(--c-ok);   border-color: var(--bd-ok); }
-    .badge-late    { background: var(--bg-late);  color: var(--c-late); border-color: var(--bd-late); }
-    .badge-missed  { background: var(--bg-miss);  color: var(--c-miss); border-color: var(--bd-miss); }
-    .badge-absent  { background: var(--bg-abs);   color: var(--c-abs);  border-color: var(--bd-abs); }
-    .badge-early   { background: #fffbeb;          color: #78350f;       border-color: #fcd34d; }
-    .badge-holiday { background: var(--bg-hol);   color: var(--c-hol);  border-color: var(--bd-hol); }
+    .filter-pill {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--blue-lt);
+      border: 1px solid #c3d5f8;
+      color: var(--blue);
+      border-radius: 99px;
+      padding: 3px 10px 3px 12px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+    .filter-pill button { background: none; border: none; cursor: pointer; color: var(--blue); font-size: 14px; line-height: 1; padding: 0; }
 
-    /* Table */
+    .btn { border-radius: 7px; font-size: 12px; font-weight: 600; padding: 7px 14px; cursor: pointer; border: 1px solid transparent; display: inline-flex; align-items: center; gap: 6px; font-family: inherit; transition: all .12s; }
+    .btn-ghost { background: var(--surface); border-color: var(--line); color: var(--ink2); }
+    .btn-ghost:hover { border-color: var(--blue); color: var(--blue); }
+    .btn-export { background: #1a7a4a; color: #fff; border-color: #1a7a4a; }
+    .btn-export:hover { background: #145f39; }
+    .btn-upload { background: var(--blue); color: #fff; border-color: var(--blue); }
+    .btn-upload:hover { background: #1447b5; }
+
+    /* ── Table ── */
     table { border-collapse: collapse; width: 100%; }
-    thead th { background: var(--surface2); color: var(--muted); font-size: 10px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; padding: 10px 14px; border-bottom: 1px solid var(--border); white-space: nowrap; }
-    tbody tr { border-bottom: 1px solid var(--border); transition: background .08s; }
+    thead th {
+      background: #f8fafb;
+      color: var(--muted);
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: .07em;
+      text-transform: uppercase;
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--line);
+      white-space: nowrap;
+      text-align: left;
+    }
+    tbody tr { border-bottom: 1px solid var(--line); }
     tbody tr:last-child { border-bottom: none; }
-    tbody tr:hover { background: #f7f9fc; }
-    tbody td { padding: 9px 14px; font-size: 13px; vertical-align: middle; }
-    .sticky-col  { position: sticky; left: 0; z-index: 10; background: var(--surface); border-right: 1px solid var(--border); }
-    .sticky-head { position: sticky; left: 0; z-index: 20; background: var(--surface2); border-right: 1px solid var(--border); }
+    tbody tr:hover { background: #fafbfc; }
+    tbody td { padding: 0; vertical-align: top; }
 
-    /* Filter tag */
-    .filter-tag { background: var(--accent-lt); color: var(--accent-tx); border: 1px solid #c5d3e8; border-radius: 99px; padding: 2px 10px; font-size: 11px; font-weight: 600; }
+    /* punch group rows */
+    .row-date { padding: 12px 14px 12px 14px; font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: var(--ink2); border-right: 1px solid var(--line); white-space: nowrap; vertical-align: top; }
+    .row-emp  { padding: 12px 14px; vertical-align: top; border-right: 1px solid var(--line); }
+    .row-emp .name { font-weight: 600; font-size: 13px; }
+    .row-emp .code { font-size: 11px; color: var(--muted); font-family: 'IBM Plex Mono', monospace; margin-top: 1px; }
+    .punches-cell { padding: 0; }
+    .punch-row {
+      display: flex;
+      align-items: center;
+      gap: 0;
+      padding: 9px 14px;
+      border-bottom: 1px solid #f0f3f6;
+      font-size: 12px;
+    }
+    .punch-row:last-child { border-bottom: none; }
+    .punch-time { font-family: 'IBM Plex Mono', monospace; font-weight: 500; min-width: 54px; color: var(--ink); }
+    .punch-time.late { color: var(--red); }
+    .punch-code { color: var(--muted); min-width: 60px; margin-left: 12px; }
+    .punch-name { color: var(--ink2); flex: 1; margin-left: 8px; }
+    .punch-location { color: var(--muted); font-size: 11px; margin-left: 8px; text-align: right; flex-shrink: 0; max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
-    /* Toolbar */
-    .toolbar { padding: 10px 16px; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; border-bottom: 1px solid var(--border); background: var(--surface); }
+    /* badges */
+    .badge { display: inline-block; padding: 2px 8px; border-radius: 6px; font-size: 11px; font-weight: 600; border: 1px solid; }
+    .badge-ok     { background: var(--green-lt); color: var(--green); border-color: var(--green-bd); }
+    .badge-late   { background: var(--red-lt);   color: var(--red);   border-color: var(--red-bd); }
+    .badge-missed { background: var(--amber-lt); color: var(--amber); border-color: var(--amber-bd); }
 
-    /* Report rows */
-    .person-row { padding: 14px 20px; border-bottom: 1px solid var(--border); transition: background .08s; }
-    .person-row:last-child { border-bottom: none; }
-    .person-row:hover { background: var(--surface2); }
-    .tag-late   { background: var(--bg-late); color: var(--c-late); border: 1px solid var(--bd-late); border-radius: 6px; padding: 2px 8px; font-size: 11px; font-weight: 600; }
-    .tag-absent { background: var(--bg-abs);  color: var(--c-abs);  border: 1px solid var(--bd-abs);  border-radius: 6px; padding: 2px 8px; font-size: 11px; font-weight: 600; }
-    .tag-missed { background: var(--bg-miss); color: var(--c-miss); border: 1px solid var(--bd-miss); border-radius: 6px; padding: 2px 8px; font-size: 11px; font-weight: 600; }
+    .status-cell { padding: 12px 14px; vertical-align: top; white-space: nowrap; border-left: 1px solid var(--line); }
+    .late-mins { font-size: 11px; color: var(--red); margin-top: 3px; font-family: 'IBM Plex Mono', monospace; }
 
-    /* Sortable */
-    th.sortable { cursor: pointer; user-select: none; }
-    th.sortable:hover { color: var(--accent); background: var(--accent-lt); }
-    th.sortable::after { content: "  ⇅"; opacity: .3; font-size: 9px; }
-    th.sort-asc  { color: var(--accent); }
-    th.sort-asc::after  { content: "  ↑"; opacity: 1; }
-    th.sort-desc { color: var(--accent); }
-    th.sort-desc::after { content: "  ↓"; opacity: 1; }
-
-    /* Upload zone */
-    #dropzone { border: 2px dashed var(--border2); border-radius: 10px; padding: 40px; text-align: center; cursor: pointer; transition: all .15s; }
-    #dropzone:hover, #dropzone.drag-over { border-color: var(--accent); background: var(--accent-lt); }
-    #dropzone svg { width: 36px; height: 36px; color: var(--accent); margin-bottom: 10px; }
-
-    /* Modal */
-    #leaveModal { display: none; position: fixed; inset: 0; z-index: 50; align-items: center; justify-content: center; padding: 16px; background: rgba(15,20,35,.45); }
-    #leaveModal.open { display: flex; }
-
+    /* ── Footer / pagination ── */
+    .table-foot {
+      padding: 10px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-top: 1px solid var(--line);
+      background: #f8fafb;
+    }
     .page-info { font-size: 12px; color: var(--muted); }
 
-    @keyframes slideUp { from { transform: translateY(10px); opacity: 0 } to { transform: translateY(0); opacity: 1 } }
-    .slide-up { animation: slideUp .2s ease-out; }
+    /* ── Empty ── */
+    .empty { text-align: center; padding: 56px; color: var(--muted); font-size: 13px; }
+
+    /* ── Modal ── */
+    #modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(10,16,24,.5);
+      z-index: 200;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    #modal-overlay.open { display: flex; }
+    .modal-box {
+      background: var(--surface);
+      border-radius: 12px;
+      width: 100%;
+      max-width: 680px;
+      max-height: 85vh;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 20px 60px rgba(0,0,0,.2);
+    }
+    .modal-head {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .modal-body { overflow-y: auto; flex: 1; }
+
+    @media (max-width: 700px) {
+      .stat-strip { flex-wrap: wrap; }
+      .punch-location { display: none; }
+    }
   </style>
 </head>
 <body>
-<div style="max-width:1360px; margin:0 auto; display:flex; flex-direction:column; gap:16px;">
 
-  <!-- Header -->
-  <div class="card" style="padding:14px 20px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
-    <div style="display:flex; align-items:center; gap:14px;">
-      <div style="width:36px;height:36px;background:var(--accent);border-radius:8px;display:flex;align-items:center;justify-content:center;">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-      </div>
-      <div>
-        <div style="font-size:15px;font-weight:700;letter-spacing:-.01em;">HR Attendance Analytics</div>
-        <div style="font-size:11px;color:var(--muted);margin-top:1px;">กะงาน 09:30–18:30 น. · ตรวจจับลืมตอกอัตโนมัติ</div>
-      </div>
-    </div>
-    <div style="display:flex;gap:8px;">
-      <button id="exportBtn" onclick="exportExcel()" class="btn btn-success" style="display:none;">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-        Export Excel
-      </button>
-      <button onclick="document.getElementById('fileInput').click()" class="btn btn-primary">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-        อัปโหลดไฟล์
-      </button>
-      <input type="file" id="fileInput" accept=".xlsx,.xls,.csv" style="display:none;" onchange="handleFile(event)">
-    </div>
+<!-- Topbar -->
+<div class="topbar">
+  <div class="topbar-brand">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#7ea8f8" stroke-width="2.2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+    HR Attendance
+    <span>กะ 09:30–18:30 น.</span>
   </div>
-
-  <!-- Upload zone (shown before file load) -->
-  <div id="uploadSection" class="card" style="padding:20px;">
-    <div id="dropzone" onclick="document.getElementById('fileInput').click()">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-      <div style="font-size:15px;font-weight:600;color:var(--text2);">คลิกหรือลากไฟล์มาวางที่นี่</div>
-      <div style="font-size:12px;color:var(--muted);margin-top:4px;">รองรับ Excel (.xlsx, .xls) และ CSV</div>
-      <div style="font-size:11px;color:var(--muted);margin-top:8px;">คอลัมน์ที่ต้องการ: <strong>EmployeeCodeName, ClockDate, ClockTime, ClockCode, ClockName, LocationName</strong></div>
-    </div>
-  </div>
-
-  <!-- Summary grid -->
-  <div id="summaryGrid" style="display:none; grid-template-columns:repeat(5,1fr); gap:10px;"></div>
-
-  <!-- Main content -->
-  <div id="mainContent" style="display:none;" class="panel">
-    <div class="tab-bar">
-      <button onclick="switchTab('att')"    id="tab-att"    class="tab-btn active">บันทึกรายวัน</button>
-      <button onclick="switchTab('matrix')" id="tab-matrix" class="tab-btn">ตารางสรุปพนักงาน</button>
-      <button onclick="switchTab('report')" id="tab-report" class="tab-btn">สรุปรายบุคคล</button>
-    </div>
-
-    <!-- Attendance tab -->
-    <div id="view-att">
-      <div class="toolbar" style="justify-content:space-between;">
-        <div id="activeFilterBadge" style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;"></div>
-        <div style="display:flex;gap:7px;flex-wrap:wrap;margin-left:auto;">
-          <select id="deptSelectAtt"  onchange="applyFilters()"><option value="">ทุกแผนก</option></select>
-          <select id="empSelectAtt"   onchange="handleEmpSelect(this.value)"><option value="">เลือกพนักงาน</option></select>
-          <input  type="text" id="searchInput" onkeyup="applyFilters()" placeholder="ค้นหา..." style="width:160px;">
-          <button onclick="clearFilters()" class="btn btn-ghost">รีเซ็ต</button>
-        </div>
-      </div>
-      <div style="overflow-x:auto;">
-        <table id="attendanceTable">
-          <thead><tr>
-            <th class="sortable" onclick="sortBy('date')"   id="th-date"   style="text-align:left;min-width:96px;">วันที่</th>
-            <th class="sortable" onclick="sortBy('code')"   id="th-code"   style="text-align:left;min-width:80px;">รหัสพนักงาน</th>
-            <th class="sortable" onclick="sortBy('name')"   id="th-name"   style="text-align:left;min-width:160px;">ชื่อพนักงาน / แผนก</th>
-            <th style="text-align:center;min-width:80px;">เข้างาน</th>
-            <th style="text-align:center;min-width:80px;">ออกงาน</th>
-            <th style="text-align:left;min-width:100px;">ClockCode (เข้า)</th>
-            <th style="text-align:left;min-width:120px;">ClockName (เข้า)</th>
-            <th style="text-align:left;min-width:100px;">ClockCode (ออก)</th>
-            <th style="text-align:left;min-width:120px;">ClockName (ออก)</th>
-            <th class="sortable" onclick="sortBy('status')" id="th-status" style="text-align:center;min-width:100px;">สถานะ</th>
-            <th style="text-align:left;min-width:140px;">สถานที่</th>
-          </tr></thead>
-          <tbody></tbody>
-        </table>
-      </div>
-      <div style="padding:10px 16px;display:flex;justify-content:space-between;align-items:center;background:var(--surface2);border-top:1px solid var(--border);">
-        <span class="page-info" id="pageInfo"></span>
-        <div style="display:flex;gap:6px;">
-          <button onclick="changePage(-1)" id="prevBtn" class="btn btn-ghost" style="font-size:12px;padding:5px 12px;">← ก่อนหน้า</button>
-          <button onclick="changePage(1)"  id="nextBtn" class="btn btn-ghost" style="font-size:12px;padding:5px 12px;">ถัดไป →</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- Matrix tab -->
-    <div id="view-matrix" style="display:none;">
-      <div class="toolbar" style="justify-content:space-between;">
-        <div style="display:flex;gap:6px;flex-wrap:wrap;">
-          <span class="badge badge-late">สาย</span>
-          <span class="badge badge-absent">ขาด</span>
-          <span class="badge badge-missed">ลืมตอก</span>
-        </div>
-        <div style="display:flex;gap:7px;flex-wrap:wrap;margin-left:auto;">
-          <select id="deptSelectMatrix" onchange="renderMatrixTable()"><option value="">ทุกแผนก</option></select>
-          <select id="empSelectMatrix"  onchange="handleEmpSelect(this.value)"><option value="">เลือกพนักงาน</option></select>
-          <input  type="text" id="matrixSearch" onkeyup="renderMatrixTable()" placeholder="ค้นหา..." style="width:160px;">
-        </div>
-      </div>
-      <div style="overflow-x:auto;max-height:62vh;">
-        <table id="matrixTable"><thead></thead><tbody></tbody></table>
-      </div>
-    </div>
-
-    <!-- Report tab -->
-    <div id="view-report" style="display:none;">
-      <div class="toolbar" style="justify-content:space-between;flex-wrap:wrap;gap:10px;">
-        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-          <span style="font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);">แสดง</span>
-          <button onclick="toggleReportFilter('late')"   id="rf-late"   class="btn btn-ghost" style="font-size:12px;padding:4px 12px;">⏱ สาย</button>
-          <button onclick="toggleReportFilter('absent')" id="rf-absent" class="btn btn-ghost" style="font-size:12px;padding:4px 12px;">✗ ขาด</button>
-          <button onclick="toggleReportFilter('missed')" id="rf-missed" class="btn btn-ghost" style="font-size:12px;padding:4px 12px;">○ ลืมตอก</button>
-        </div>
-        <div style="display:flex;gap:7px;flex-wrap:wrap;margin-left:auto;">
-          <select id="deptSelectReport" onchange="renderReportTab()"><option value="">ทุกแผนก</option></select>
-          <input  type="text" id="reportSearch" onkeyup="renderReportTab()" placeholder="ค้นหา..." style="width:160px;">
-        </div>
-      </div>
-      <div style="overflow-y:auto;max-height:65vh;">
-        <div id="reportList"></div>
-      </div>
-    </div>
+  <div style="display:flex;gap:8px;">
+    <button id="exportBtn" onclick="exportExcel()" class="btn btn-export" style="display:none;">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      Export
+    </button>
+    <button onclick="document.getElementById('fileInput').click()" class="btn btn-upload">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+      อัปโหลดไฟล์
+    </button>
+    <input type="file" id="fileInput" accept=".xlsx,.xls,.csv" style="display:none;" onchange="handleFile(event)">
   </div>
 </div>
 
-<!-- Modal -->
-<div id="leaveModal" onclick="if(event.target===this)closeModal()">
-  <div class="panel slide-up" style="width:100%;max-width:700px;max-height:85vh;display:flex;flex-direction:column;">
-    <div style="padding:14px 20px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border);background:var(--surface2);flex-shrink:0;">
-      <div>
-        <div style="font-weight:700;font-size:14px;" id="modalTitle"></div>
-        <div style="font-size:11px;color:var(--muted);margin-top:2px;">ประวัติความผิดปกติ</div>
+<div class="main">
+
+  <!-- Upload zone -->
+  <div id="uploadSection">
+    <div class="upload-zone" id="dropzone" onclick="document.getElementById('fileInput').click()">
+      <div class="upload-icon">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
       </div>
-      <button onclick="closeModal()" class="btn btn-ghost" style="padding:5px 8px;">✕</button>
+      <div class="upload-title">คลิกหรือลากไฟล์มาวางที่นี่</div>
+      <div class="upload-sub">
+        รองรับ Excel (.xlsx, .xls) และ CSV<br>
+        คอลัมน์ที่ต้องการ: <strong>EmployeeCodeName · ClockDate · ClockTime · ClockCode · ClockName · LocationName</strong>
+      </div>
     </div>
-    <div style="overflow-y:auto;flex:1;">
-      <table id="modalTable" style="width:100%;">
-        <thead><tr>
-          <th style="text-align:left;width:110px;">วันที่</th>
-          <th style="text-align:left;">สถานะ</th>
-          <th style="text-align:left;">เข้า</th>
-          <th style="text-align:left;">ออก</th>
-          <th style="text-align:left;">ClockCode (เข้า)</th>
-          <th style="text-align:left;">ClockName (เข้า)</th>
-        </tr></thead>
-        <tbody></tbody>
+  </div>
+
+  <!-- Stats -->
+  <div id="statsSection" style="display:none;">
+    <div class="stat-strip" id="statStrip"></div>
+  </div>
+
+  <!-- Table panel -->
+  <div id="tableSection" style="display:none;" class="panel">
+    <div class="toolbar">
+      <div class="search-wrap">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input type="text" id="searchInput" placeholder="ค้นหาชื่อหรือรหัสพนักงาน..." oninput="applyFilters()">
+      </div>
+      <div id="filterPills" style="display:flex;gap:6px;flex-wrap:wrap;"></div>
+      <button onclick="clearFilters()" id="resetBtn" class="btn btn-ghost" style="display:none;">รีเซ็ต</button>
+      <div style="margin-left:auto;display:flex;gap:6px;">
+        <span id="pageInfo" class="page-info"></span>
+      </div>
+    </div>
+
+    <div style="overflow-x:auto;">
+      <table>
+        <thead>
+          <tr>
+            <th style="min-width:100px;">วันที่</th>
+            <th style="min-width:180px;">พนักงาน</th>
+            <th>บันทึกการตอกบัตร</th>
+            <th style="min-width:100px;text-align:center;border-left:1px solid var(--line);">สถานะ</th>
+          </tr>
+        </thead>
+        <tbody id="tableBody"></tbody>
       </table>
     </div>
+
+    <div class="table-foot">
+      <span class="page-info" id="pageInfoBottom"></span>
+      <div style="display:flex;gap:6px;">
+        <button onclick="changePage(-1)" id="prevBtn" class="btn btn-ghost" style="font-size:12px;padding:5px 12px;">← ก่อนหน้า</button>
+        <button onclick="changePage(1)"  id="nextBtn" class="btn btn-ghost" style="font-size:12px;padding:5px 12px;">ถัดไป →</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Modal -->
+<div id="modal-overlay" onclick="if(event.target===this)closeModal()">
+  <div class="modal-box">
+    <div class="modal-head">
+      <div>
+        <div style="font-weight:700;font-size:14px;" id="modalTitle"></div>
+        <div style="font-size:11px;color:var(--muted);margin-top:2px;">ประวัติการตอกบัตร</div>
+      </div>
+      <button onclick="closeModal()" class="btn btn-ghost" style="padding:4px 8px;">✕</button>
+    </div>
+    <div class="modal-body" id="modalBody"></div>
   </div>
 </div>
 
 <script>
-// ─── Constants ───────────────────────────────────────────────
-const SHIFT_START = '09:30';
-const SHIFT_END   = '18:30';
-const LATE_GRACE  = 30; // minutes
-const ROWS_PER_PAGE = 50;
+// ─── Config ──────────────────────────────────────────────────
+const SHIFT_START_H = 9, SHIFT_START_M = 30;
+const LATE_GRACE_MINS = 30; // มาสายหลัง 10:00
 
 // ─── State ───────────────────────────────────────────────────
-let allData = [], filteredData = [], matrixData = [];
+let allGroups = [];      // [{date, dateSort, code, name, punches[], status, lateMins}]
+let filtered  = [];
 let currentPage = 1;
-let activeStatusFilter = '';
-let sortCol = 'date', sortDir = 'asc';
-let reportFilterSet = new Set(['late','absent','missed']);
-let allDepts = [];
+const PER_PAGE = 40;
+let activeStatus = '';
 
-// ─── File handling ───────────────────────────────────────────
-const dropzone = document.getElementById('dropzone');
-dropzone.addEventListener('dragover',  e => { e.preventDefault(); dropzone.classList.add('drag-over'); });
-dropzone.addEventListener('dragleave', () => dropzone.classList.remove('drag-over'));
-dropzone.addEventListener('drop', e => {
-  e.preventDefault(); dropzone.classList.remove('drag-over');
-  if (e.dataTransfer.files[0]) processFile(e.dataTransfer.files[0]);
+// ─── Upload ──────────────────────────────────────────────────
+const dz = document.getElementById('dropzone');
+dz.addEventListener('dragover',  e => { e.preventDefault(); dz.classList.add('drag-over'); });
+dz.addEventListener('dragleave', () => dz.classList.remove('drag-over'));
+dz.addEventListener('drop', e => {
+  e.preventDefault(); dz.classList.remove('drag-over');
+  const f = e.dataTransfer.files[0]; if (f) processFile(f);
 });
-
-function handleFile(event) {
-  const file = event.target.files[0];
-  if (file) processFile(file);
-}
+function handleFile(ev) { const f = ev.target.files[0]; if (f) processFile(f); }
 
 function processFile(file) {
-  const reader = new FileReader();
-  reader.onload = e => {
+  const r = new FileReader();
+  r.onload = e => {
     try {
-      const wb   = XLSX.read(new Uint8Array(e.target.result), { type: 'array' });
-      const json = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { defval: '' });
-      analyzeData(json);
-    } catch(err) {
-      alert('อ่านไฟล์ไม่ได้: ' + err);
-    }
+      const wb  = XLSX.read(new Uint8Array(e.target.result), { type: 'array' });
+      const raw = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { defval: '' });
+      buildGroups(raw);
+    } catch(err) { alert('อ่านไฟล์ไม่ได้: ' + err); }
   };
-  reader.readAsArrayBuffer(file);
+  r.readAsArrayBuffer(file);
 }
 
-// ─── Core: parse & group ──────────────────────────────────────
-function analyzeData(raw) {
-  // Group by employee+date
-  const grouped = {};
-  raw.forEach(row => {
-    // Parse EmployeeCodeName  →  "EMP001 - สมชาย ใจดี"  or "EMP001-สมชาย"
-    const empRaw   = String(row['EmployeeCodeName'] || '').trim();
-    const dashIdx  = empRaw.indexOf('-');
-    const empCode  = dashIdx > -1 ? empRaw.slice(0, dashIdx).trim() : empRaw;
-    const empName  = dashIdx > -1 ? empRaw.slice(dashIdx + 1).trim() : '';
+// ─── Build groups ─────────────────────────────────────────────
+// Each group = one employee × one calendar date, with ALL punch rows
+function buildGroups(raw) {
+  const map = {};
 
-    const dateStr  = String(row['ClockDate']    || '').trim();
+  raw.forEach(row => {
+    const empRaw   = String(row['EmployeeCodeName'] || '').trim();
+    const dash     = empRaw.indexOf('-');
+    const code     = dash > -1 ? empRaw.slice(0, dash).trim() : empRaw;
+    const name     = dash > -1 ? empRaw.slice(dash + 1).trim() : '';
+    const dateRaw  = String(row['ClockDate']    || '').trim();
     const timeStr  = String(row['ClockTime']    || '').trim();
     const clockCode= String(row['ClockCode']    || '').trim();
     const clockName= String(row['ClockName']    || '').trim();
     const location = String(row['LocationName'] || '').trim();
 
-    if (!empCode || !dateStr || !timeStr) return;
+    if (!code || !dateRaw || !timeStr) return;
 
-    const key = empCode + '|' + dateStr;
-    if (!grouped[key]) {
-      grouped[key] = { code: empCode, name: empName, date: dateStr, punches: [], locations: new Set() };
-    }
-    grouped[key].punches.push({ time: timeStr, clockCode, clockName });
-    if (location) grouped[key].locations.add(location);
+    // Format date → dd/mm/yyyy
+    const dateFmt = formatDate(dateRaw);
+    const dateSort = toDateSort(dateRaw);
+
+    const key = code + '|' + dateRaw;
+    if (!map[key]) map[key] = { date: dateFmt, dateSort, code, name, punches: [] };
+    map[key].punches.push({ time: timeStr, clockCode, clockName, location });
   });
 
-  allData = [];
-  const empMap = {}; // code → { name, dept, dates }
+  // Sort punches per group, then determine status
+  allGroups = Object.values(map).map(g => {
+    g.punches.sort((a, b) => a.time.localeCompare(b.time));
 
-  Object.values(grouped).forEach(item => {
-    item.punches.sort((a, b) => a.time.localeCompare(b.time));
+    const firstTime = g.punches[0].time;
+    const [fh, fm] = firstTime.split(':').map(Number);
+    const firstMins = fh * 60 + fm;
+    const shiftMins = SHIFT_START_H * 60 + SHIFT_START_M;
+    const lateThresh = shiftMins + LATE_GRACE_MINS;
 
-    const firstPunch = item.punches[0];
-    const lastPunch  = item.punches[item.punches.length - 1];
-    const timeIn     = firstPunch.time;
-    const timeOut    = item.punches.length > 1 ? lastPunch.time : '';
-    const clockCodeIn   = firstPunch.clockCode;
-    const clockNameIn   = firstPunch.clockName;
-    const clockCodeOut  = item.punches.length > 1 ? lastPunch.clockCode : '';
-    const clockNameOut  = item.punches.length > 1 ? lastPunch.clockName : '';
-    const locs = Array.from(item.locations);
-
-    // Determine status
-    let status = 'ปกติ';
-    const inMinutes  = toMinutes(timeIn);
-    const outMinutes = timeOut ? toMinutes(timeOut) : null;
-    const shiftStartMins = toMinutes(SHIFT_START);
-    const shiftEndMins   = toMinutes(SHIFT_END);
-    const lateThresh     = shiftStartMins + LATE_GRACE;
-
-    const isLate       = inMinutes > lateThresh;
-    const isEarly      = outMinutes !== null && outMinutes < shiftEndMins;
-    const isMissedOut  = !timeOut && item.punches.length === 1;
-    const lateMins     = isLate ? inMinutes - shiftStartMins : 0;
-
-    if (isMissedOut)        status = 'ลืมตอกออก';
-    else if (isLate && isEarly) status = 'สาย & กลับก่อน';
-    else if (isLate)        status = 'มาสาย';
-    else if (isEarly)       status = 'กลับก่อน';
-
-    // Dept: derive from ClockName in if available
-    const dept = clockNameIn || '';
-
-    const rec = {
-      code: item.code,
-      name: item.name,
-      dept,
-      date: item.date,
-      timeIn,
-      timeOut: timeOut || '—',
-      clockCodeIn,
-      clockNameIn,
-      clockCodeOut,
-      clockNameOut,
-      status,
-      lateMins,
-      location: locs[0] || '—',
-      moreLocs: locs.length > 1 ? locs.length - 1 : 0,
-      _locs: locs,
-    };
-    allData.push(rec);
-
-    // Build empMap for matrix
-    if (!empMap[item.code]) {
-      empMap[item.code] = { code: item.code, name: item.name, lateCount: 0, lateMins: 0, missed: 0, absent: 0, records: [] };
+    let status = 'ปกติ', lateMins = 0;
+    if (g.punches.length === 1) {
+      status = 'ลืมตอกออก';
+    } else if (firstMins > lateThresh) {
+      status = 'มาสาย';
+      lateMins = firstMins - shiftMins;
     }
-    const em = empMap[item.code];
-    if (status === 'มาสาย' || status === 'สาย & กลับก่อน') { em.lateCount++; em.lateMins += lateMins; }
-    if (status === 'ลืมตอกออก') em.missed++;
-    em.records.push(rec);
+    g.status   = status;
+    g.lateMins = lateMins;
+    return g;
   });
 
-  // Sort allData by date
-  allData.sort((a, b) => parseDateSort(a.date) - parseDateSort(b.date));
+  // Sort by date asc, then code
+  allGroups.sort((a, b) => a.dateSort - b.dateSort || a.code.localeCompare(b.code));
 
-  // Build matrix
-  matrixData = Object.values(empMap).sort((a, b) => a.code.localeCompare(b.code));
-
-  // Build dept list
-  const deptSet = new Set();
-  allData.forEach(r => { if (r.dept) deptSet.add(r.dept); });
-  allDepts = Array.from(deptSet).sort();
-
-  // Populate dropdowns
-  populateDropdowns();
-  renderSummary();
+  renderStats();
   applyFilters();
-  renderMatrixTable();
-  renderReportTab();
-
   document.getElementById('uploadSection').style.display = 'none';
-  document.getElementById('summaryGrid').style.display   = 'grid';
-  document.getElementById('mainContent').style.display   = 'block';
+  document.getElementById('statsSection').style.display  = 'block';
+  document.getElementById('tableSection').style.display  = 'block';
   document.getElementById('exportBtn').style.display     = 'inline-flex';
 }
 
-// ─── Helpers ─────────────────────────────────────────────────
-function toMinutes(t) {
-  if (!t) return 0;
-  const [h, m] = t.split(':').map(Number);
-  return h * 60 + m;
+// ─── Date helpers ────────────────────────────────────────────
+function formatDate(d) {
+  // Accept YYYY-MM-DD or DD/MM/YYYY or serial (number)
+  if (!d) return '';
+  d = String(d).trim();
+  // already dd/mm/yyyy
+  if (/^\d{2}\/\d{2}\/\d{4}$/.test(d)) return d;
+  // yyyy-mm-dd
+  if (/^\d{4}-\d{2}-\d{2}/.test(d)) {
+    const [y, mo, day] = d.slice(0, 10).split('-');
+    return `${day}/${mo}/${y}`;
+  }
+  // mm/dd/yyyy (US)
+  if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(d)) {
+    const p = d.split('/');
+    return `${p[1].padStart(2,'0')}/${p[0].padStart(2,'0')}/${p[2]}`;
+  }
+  // Excel serial number
+  if (/^\d{4,6}$/.test(d)) {
+    const dt = new Date(Math.round((+d - 25569) * 86400 * 1000));
+    const dd = String(dt.getUTCDate()).padStart(2,'0');
+    const mm = String(dt.getUTCMonth()+1).padStart(2,'0');
+    const yy = dt.getUTCFullYear();
+    return `${dd}/${mm}/${yy}`;
+  }
+  return d;
 }
-function parseDateSort(d) {
-  if (!d) return 0;
-  // Support DD/MM/YYYY or YYYY-MM-DD
-  const p = d.split('/');
-  if (p.length === 3) return new Date(`${p[2]}-${p[1]}-${p[0]}`).getTime();
-  return new Date(d).getTime();
-}
-
-// ─── Dropdowns ───────────────────────────────────────────────
-function populateDropdowns() {
-  const deptOpt = `<option value="">ทุกแผนก</option>` + allDepts.map(d => `<option value="${d}">${d}</option>`).join('');
-  ['deptSelectAtt','deptSelectMatrix','deptSelectReport'].forEach(id => {
-    const el = document.getElementById(id); if (el) el.innerHTML = deptOpt;
-  });
-
-  const emps = [...new Map(allData.map(r => [r.code, r])).values()].sort((a,b) => a.code.localeCompare(b.code));
-  const empOpt = `<option value="">เลือกพนักงาน</option>` + emps.map(e => `<option value="${e.code}">${e.code} – ${e.name}</option>`).join('');
-  ['empSelectAtt','empSelectMatrix'].forEach(id => {
-    const el = document.getElementById(id); if (el) el.innerHTML = empOpt;
-  });
-}
-
-function handleEmpSelect(val) {
-  document.getElementById('empSelectAtt').value    = val;
-  document.getElementById('empSelectMatrix').value = val;
-  applyFilters(); renderMatrixTable();
-}
-
-// ─── Summary cards ────────────────────────────────────────────
-function renderSummary() {
-  const counts = { ปกติ: 0, มาสาย: 0, ลืมตอกออก: 0, ขาด: 0, 'สาย & กลับก่อน': 0 };
-  allData.forEach(r => { if (counts[r.status] !== undefined) counts[r.status]++; else counts['ขาด']++; });
-
-  const cards = [
-    { id: 'ปกติ',          label: 'ปกติ',         val: counts['ปกติ'],            col: '#166534' },
-    { id: 'มาสาย',         label: 'มาสาย',        val: counts['มาสาย'],           col: '#92400e' },
-    { id: 'สาย & กลับก่อน', label: 'สาย & กลับก่อน', val: counts['สาย & กลับก่อน'], col: '#b45309' },
-    { id: 'ลืมตอกออก',    label: 'ลืมตอกออก',    val: counts['ลืมตอกออก'],      col: '#9a3412' },
-    { id: 'กลับก่อน',      label: 'กลับก่อน',     val: allData.filter(r=>r.status==='กลับก่อน').length, col: '#78350f' },
-  ];
-  document.getElementById('summaryGrid').innerHTML = cards.map(c => `
-    <div id="card-${c.id}" onclick="toggleStatusFilter('${c.id}')" class="stat-card">
-      <div class="stat-label">${c.label}</div>
-      <div class="stat-value" style="color:${c.col}">${c.val}</div>
-    </div>`).join('');
+function toDateSort(d) {
+  d = String(d).trim();
+  if (/^\d{4}-\d{2}-\d{2}/.test(d)) return new Date(d.slice(0,10)).getTime();
+  if (/^\d{2}\/\d{2}\/\d{4}$/.test(d)) { const p=d.split('/'); return new Date(`${p[2]}-${p[1]}-${p[0]}`).getTime(); }
+  if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(d)) { const p=d.split('/'); return new Date(`${p[2]}-${p[0].padStart(2,'0')}-${p[1].padStart(2,'0')}`).getTime(); }
+  if (/^\d{4,6}$/.test(d)) return (parseInt(d) - 25569) * 86400000;
+  return 0;
 }
 
-function toggleStatusFilter(status) {
-  activeStatusFilter = activeStatusFilter === status ? '' : status;
-  document.querySelectorAll('.stat-card').forEach(el => el.classList.remove('active'));
-  if (activeStatusFilter) document.getElementById('card-' + activeStatusFilter)?.classList.add('active');
-  switchTab('att');
+// ─── Stats ───────────────────────────────────────────────────
+function renderStats() {
+  const total  = allGroups.length;
+  const late   = allGroups.filter(g => g.status === 'มาสาย').length;
+  const missed = allGroups.filter(g => g.status === 'ลืมตอกออก').length;
+  const normal = allGroups.filter(g => g.status === 'ปกติ').length;
+
+  document.getElementById('statStrip').innerHTML = `
+    <div class="stat-box green ${activeStatus===''?'active':''}" onclick="setStatusFilter('')">
+      <div class="label">ทั้งหมด</div>
+      <div class="value" style="color:var(--ink);">${total}</div>
+    </div>
+    <div class="stat-box green ${activeStatus==='ปกติ'?'active':''}" onclick="setStatusFilter('ปกติ')">
+      <div class="label">ปกติ</div>
+      <div class="value">${normal}</div>
+    </div>
+    <div class="stat-box red ${activeStatus==='มาสาย'?'active':''}" onclick="setStatusFilter('มาสาย')">
+      <div class="label">มาสาย</div>
+      <div class="value">${late}</div>
+    </div>
+    <div class="stat-box ${activeStatus==='ลืมตอกออก'?'active':''}" onclick="setStatusFilter('ลืมตอกออก')">
+      <div class="label">ลืมตอกออก</div>
+      <div class="value" style="color:var(--amber);">${missed}</div>
+    </div>
+  `;
+}
+function setStatusFilter(s) {
+  activeStatus = s;
+  renderStats();
   applyFilters();
 }
 
 // ─── Filters ─────────────────────────────────────────────────
 function applyFilters() {
-  const q       = document.getElementById('searchInput').value.toLowerCase();
-  const selEmp  = document.getElementById('empSelectAtt').value;
-  const selDept = document.getElementById('deptSelectAtt').value;
-
-  filteredData = allData.filter(r => {
-    const mText   = !q || [r.code, r.name, r.dept, r.date, r.timeIn, r.timeOut, r.status, r.clockCodeIn, r.clockNameIn, r.location]
-                         .join(' ').toLowerCase().includes(q);
-    const mEmp    = !selEmp  || r.code === selEmp;
-    const mDept   = !selDept || r.dept === selDept;
-    const mStatus = !activeStatusFilter || r.status === activeStatusFilter;
-    return mText && mEmp && mDept && mStatus;
+  const q = document.getElementById('searchInput').value.trim().toLowerCase();
+  filtered = allGroups.filter(g => {
+    const mQ = !q || (g.code + ' ' + g.name).toLowerCase().includes(q);
+    const mS = !activeStatus || g.status === activeStatus;
+    return mQ && mS;
   });
 
-  // Active filter badges
-  const bc = document.getElementById('activeFilterBadge'); bc.innerHTML = '';
-  if (activeStatusFilter) bc.innerHTML += `<span class="filter-tag">สถานะ: ${activeStatusFilter}</span>`;
-  if (selEmp)             bc.innerHTML += `<span class="filter-tag">พนักงาน: ${selEmp}</span>`;
-  if (selDept)            bc.innerHTML += `<span class="filter-tag">แผนก: ${selDept}</span>`;
-  if (q)                  bc.innerHTML += `<span class="filter-tag">ค้นหา: "${q}"</span>`;
+  // Pills
+  const pills = document.getElementById('filterPills'); pills.innerHTML = '';
+  if (activeStatus) pills.innerHTML += `<span class="filter-pill">สถานะ: ${activeStatus} <button onclick="setStatusFilter('')">×</button></span>`;
+  if (q)            pills.innerHTML += `<span class="filter-pill">"${q}" <button onclick="document.getElementById('searchInput').value='';applyFilters()">×</button></span>`;
+  document.getElementById('resetBtn').style.display = (activeStatus || q) ? 'inline-flex' : 'none';
 
   currentPage = 1;
   renderTable();
 }
-
-// ─── Attendance table ─────────────────────────────────────────
-function badgeClass(s) {
-  if (s === 'ปกติ')              return 'badge-normal';
-  if (s === 'มาสาย' || s === 'สาย & กลับก่อน') return 'badge-late';
-  if (s.includes('ลืม'))        return 'badge-missed';
-  if (s === 'กลับก่อน')         return 'badge-early';
-  return 'badge-absent';
+function clearFilters() {
+  activeStatus = '';
+  document.getElementById('searchInput').value = '';
+  renderStats();
+  applyFilters();
 }
 
-function sortBy(col) {
-  if (sortCol === col) sortDir = sortDir === 'asc' ? 'desc' : 'asc';
-  else { sortCol = col; sortDir = 'asc'; }
-  ['date','code','name','status'].forEach(c => {
-    const th = document.getElementById('th-'+c); if (!th) return;
-    th.classList.remove('sort-asc','sort-desc');
-    if (c === sortCol) th.classList.add(sortDir === 'asc' ? 'sort-asc' : 'sort-desc');
-  });
-  filteredData.sort((a, b) => {
-    let va = a[sortCol === 'date' ? 'date' : sortCol] || '';
-    let vb = b[sortCol === 'date' ? 'date' : sortCol] || '';
-    if (sortCol === 'date') { va = parseDateSort(va); vb = parseDateSort(vb); return sortDir === 'asc' ? va - vb : vb - va; }
-    const cmp = va.localeCompare(vb, 'th');
-    return sortDir === 'asc' ? cmp : -cmp;
-  });
-  currentPage = 1; renderTable();
+// ─── Table ───────────────────────────────────────────────────
+function badgeCls(s) {
+  if (s === 'ปกติ') return 'badge-ok';
+  if (s === 'มาสาย') return 'badge-late';
+  return 'badge-missed';
 }
 
 function renderTable() {
-  const tbody = document.querySelector('#attendanceTable tbody'); tbody.innerHTML = '';
-  const start = (currentPage - 1) * ROWS_PER_PAGE;
-  const end   = Math.min(start + ROWS_PER_PAGE, filteredData.length);
-
-  if (!filteredData.length) {
-    tbody.innerHTML = `<tr><td colspan="11" style="text-align:center;padding:40px;color:var(--muted);">ไม่พบข้อมูล</td></tr>`;
-    document.getElementById('pageInfo').innerText = '';
-    return;
-  }
-
-  filteredData.slice(start, end).forEach(r => {
-    const inColor  = toMinutes(r.timeIn) > toMinutes(SHIFT_START) + LATE_GRACE ? 'color:var(--c-late);font-weight:600;' : '';
-    const outColor = r.timeOut !== '—' && toMinutes(r.timeOut) < toMinutes(SHIFT_END) ? 'color:#78350f;font-weight:600;' : '';
-    tbody.innerHTML += `<tr>
-      <td style="font-size:12px;color:var(--text2);font-family:'Inter',monospace;">${r.date}</td>
-      <td style="font-weight:600;font-size:12px;">${r.code}</td>
-      <td>
-        <div style="font-weight:500;">${r.name}</div>
-        <div style="font-size:11px;color:var(--muted);margin-top:1px;">${r.dept || '—'}</div>
-      </td>
-      <td style="text-align:center;font-family:'Inter',monospace;font-size:12px;${inColor}">${r.timeIn}</td>
-      <td style="text-align:center;font-family:'Inter',monospace;font-size:12px;${outColor}">${r.timeOut}</td>
-      <td style="font-size:12px;color:var(--text2);">${r.clockCodeIn || '—'}</td>
-      <td style="font-size:12px;color:var(--text2);">${r.clockNameIn || '—'}</td>
-      <td style="font-size:12px;color:var(--text2);">${r.clockCodeOut || '—'}</td>
-      <td style="font-size:12px;color:var(--text2);">${r.clockNameOut || '—'}</td>
-      <td style="text-align:center;">
-        <span class="badge ${badgeClass(r.status)}">${r.status}</span>
-        ${r.lateMins > 0 ? `<div style="font-size:10px;color:var(--c-late);margin-top:2px;">+${r.lateMins} น.</div>` : ''}
-      </td>
-      <td style="font-size:12px;color:var(--text2);">
-        ${r.location}${r.moreLocs > 0 ? ` <span style="font-size:10px;background:var(--surface2);color:var(--muted);padding:1px 5px;border-radius:4px;">+${r.moreLocs}</span>` : ''}
-      </td>
-    </tr>`;
-  });
-
-  document.getElementById('pageInfo').innerText = `${start+1}–${end} จาก ${filteredData.length.toLocaleString()} รายการ`;
-  document.getElementById('prevBtn').disabled = currentPage === 1;
-  document.getElementById('nextBtn').disabled = end >= filteredData.length;
-}
-
-// ─── Matrix table ─────────────────────────────────────────────
-function renderMatrixTable() {
-  const q       = document.getElementById('matrixSearch').value.toLowerCase();
-  const selEmp  = document.getElementById('empSelectMatrix').value;
-  const selDept = document.getElementById('deptSelectMatrix').value;
-
-  const data = matrixData.filter(e =>
-    (!selEmp  || e.code === selEmp) &&
-    (!selDept || e.records.some(r => r.dept === selDept)) &&
-    (!q       || (e.code + ' ' + e.name).toLowerCase().includes(q))
-  );
-
-  const thead = document.querySelector('#matrixTable thead');
-  const tbody = document.querySelector('#matrixTable tbody');
-  thead.innerHTML = `<tr>
-    <th class="sticky-head" style="text-align:left;min-width:80px;">รหัส</th>
-    <th class="sticky-head" style="text-align:left;min-width:160px;">ชื่อ</th>
-    <th style="text-align:center;color:var(--c-late);">สาย (ครั้ง)</th>
-    <th style="text-align:center;color:var(--c-late);">สาย (นาที)</th>
-    <th style="text-align:center;color:var(--c-miss);">ลืมตอก</th>
-    <th style="text-align:center;color:var(--c-abs);">ขาด</th>
-    <th style="text-align:center;">ปกติ</th>
-    <th style="text-align:center;position:sticky;right:0;background:var(--surface2);border-left:1px solid var(--border);"></th>
-  </tr>`;
-
+  const tbody = document.getElementById('tableBody');
   tbody.innerHTML = '';
-  if (!data.length) {
-    tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:40px;color:var(--muted);">ไม่พบข้อมูล</td></tr>`;
+
+  if (!filtered.length) {
+    tbody.innerHTML = `<tr><td colspan="4"><div class="empty">ไม่พบข้อมูล</div></td></tr>`;
+    updatePagination();
     return;
   }
 
-  data.forEach(e => {
-    const normal = e.records.filter(r => r.status === 'ปกติ').length;
+  const start = (currentPage - 1) * PER_PAGE;
+  const end   = Math.min(start + PER_PAGE, filtered.length);
+
+  filtered.slice(start, end).forEach(g => {
+    const punchesHtml = g.punches.map(p => {
+      const [ph, pm] = p.time.split(':').map(Number);
+      const pMins = ph * 60 + pm;
+      const shiftMins = SHIFT_START_H * 60 + SHIFT_START_M + LATE_GRACE_MINS;
+      const isFirstLate = g.status === 'มาสาย' && p === g.punches[0];
+      const timeCls = isFirstLate ? 'punch-time late' : 'punch-time';
+      return `<div class="punch-row">
+        <span class="${timeCls}">${p.time}</span>
+        <span class="punch-code">${p.clockCode || '—'}</span>
+        <span class="punch-name">${p.clockName || '—'}</span>
+        <span class="punch-location" title="${p.location}">${p.location || '—'}</span>
+      </div>`;
+    }).join('');
+
+    const badgeHtml = `<span class="badge ${badgeCls(g.status)}">${g.status}</span>` +
+      (g.lateMins > 0 ? `<div class="late-mins">+${g.lateMins} นาที</div>` : '');
+
     tbody.innerHTML += `<tr>
-      <td class="sticky-col" style="font-weight:600;font-size:12px;">${e.code}</td>
-      <td class="sticky-col" style="font-weight:500;">${e.name}</td>
-      <td style="text-align:center;font-weight:600;color:${e.lateCount>0?'var(--c-late)':'var(--border2)'};">${e.lateCount || '—'}</td>
-      <td style="text-align:center;color:${e.lateMins>0?'var(--c-late)':'var(--border2)'};">${e.lateMins || '—'}</td>
-      <td style="text-align:center;font-weight:600;color:${e.missed>0?'var(--c-miss)':'var(--border2)'};">${e.missed || '—'}</td>
-      <td style="text-align:center;font-weight:600;color:${e.absent>0?'var(--c-abs)':'var(--border2)'};">${e.absent || '—'}</td>
-      <td style="text-align:center;color:${normal>0?'var(--c-ok)':'var(--border2)'};">${normal || '—'}</td>
-      <td style="text-align:center;position:sticky;right:0;background:var(--surface);border-left:1px solid var(--border);">
-        <button onclick="openModal('${e.code}','${e.name}')" class="btn btn-ghost" style="font-size:11px;padding:4px 10px;">ประวัติ</button>
+      <td class="row-date">${g.date}</td>
+      <td class="row-emp">
+        <div class="name">${g.name}</div>
+        <div class="code">${g.code}</div>
       </td>
+      <td class="punches-cell">${punchesHtml}</td>
+      <td class="status-cell" style="text-align:center;">${badgeHtml}</td>
     </tr>`;
   });
+
+  updatePagination(start, end);
 }
 
-// ─── Report tab ───────────────────────────────────────────────
-function toggleReportFilter(type) {
-  if (reportFilterSet.has(type)) reportFilterSet.delete(type);
-  else reportFilterSet.add(type);
-  ['late','absent','missed'].forEach(t => {
-    const btn = document.getElementById('rf-'+t);
-    if (btn) {
-      btn.style.background      = reportFilterSet.has(t) ? 'var(--accent)' : '';
-      btn.style.color           = reportFilterSet.has(t) ? '#fff' : '';
-      btn.style.borderColor     = reportFilterSet.has(t) ? 'var(--accent)' : '';
-    }
-  });
-  renderReportTab();
+function updatePagination(start, end) {
+  const total = filtered.length;
+  const info  = total ? `${(start||0)+1}–${end||0} จาก ${total.toLocaleString()} รายการ` : '';
+  document.getElementById('pageInfo').innerText       = info;
+  document.getElementById('pageInfoBottom').innerText = info;
+  document.getElementById('prevBtn').disabled = currentPage === 1;
+  document.getElementById('nextBtn').disabled = !filtered.length || (end >= filtered.length);
 }
+function changePage(d) { currentPage += d; renderTable(); window.scrollTo(0,0); }
 
-function renderReportTab() {
-  const q       = document.getElementById('reportSearch').value.toLowerCase();
-  const selDept = document.getElementById('deptSelectReport').value;
-  const list    = document.getElementById('reportList'); list.innerHTML = '';
-
-  const people = matrixData.filter(e => {
-    const hasLate   = reportFilterSet.has('late')   && e.lateCount > 0;
-    const hasMissed = reportFilterSet.has('missed') && e.missed > 0;
-    const hasAbsent = reportFilterSet.has('absent') && e.absent > 0;
-    const matchDept = !selDept || e.records.some(r => r.dept === selDept);
-    const matchQ    = !q || (e.code + ' ' + e.name).toLowerCase().includes(q);
-    return matchDept && matchQ && (hasLate || hasMissed || hasAbsent);
-  });
-
-  if (!people.length) {
-    list.innerHTML = `<div style="text-align:center;padding:48px;color:var(--muted);font-size:13px;">ไม่พบข้อมูล</div>`;
-    return;
-  }
-
-  people.forEach(e => {
-    let chips = '';
-    if (reportFilterSet.has('late')   && e.lateCount > 0) chips += `<span class="tag-late">⏱ สาย ${e.lateCount} ครั้ง · ${e.lateMins} นาที</span>`;
-    if (reportFilterSet.has('missed') && e.missed > 0)    chips += `<span class="tag-missed">○ ลืมตอก ${e.missed} ครั้ง</span>`;
-    if (reportFilterSet.has('absent') && e.absent > 0)    chips += `<span class="tag-absent">✗ ขาด ${e.absent} วัน</span>`;
-
-    const lateRecs   = e.records.filter(r => r.status.includes('สาย'));
-    const missedRecs = e.records.filter(r => r.status.includes('ลืม'));
-
-    let detail = '';
-    if (reportFilterSet.has('late') && lateRecs.length)
-      detail += `<div style="margin-top:6px;font-size:11px;color:var(--muted);">
-        <span style="color:var(--c-late);font-weight:600;">สาย</span>
-        <span style="margin-left:6px;">${lateRecs.map(r=>`${r.date} <span style="color:var(--c-late);font-weight:600;">${r.timeIn}</span> (+${r.lateMins}น.)`).join(' &nbsp;·&nbsp; ')}</span>
-      </div>`;
-    if (reportFilterSet.has('missed') && missedRecs.length)
-      detail += `<div style="margin-top:4px;font-size:11px;color:var(--muted);">
-        <span style="color:var(--c-miss);font-weight:600;">ลืมตอก</span>
-        <span style="margin-left:6px;">${missedRecs.map(r=>`${r.date}`).join(' &nbsp;·&nbsp; ')}</span>
-      </div>`;
-
-    list.innerHTML += `
-      <div class="person-row">
-        <div style="display:flex;flex-wrap:wrap;align-items:center;gap:10px;">
-          <div>
-            <span style="font-weight:700;font-size:13px;">${e.code}</span>
-            <span style="margin-left:8px;font-size:13px;">${e.name}</span>
-          </div>
-          <div style="display:flex;flex-wrap:wrap;gap:6px;">${chips}</div>
-          <button onclick="openModal('${e.code}','${e.name}')" class="btn btn-ghost" style="margin-left:auto;font-size:11px;padding:4px 12px;">ประวัติ</button>
-        </div>
-        ${detail}
-      </div>`;
-  });
-}
-
-// ─── Modal ────────────────────────────────────────────────────
-function openModal(code, name) {
-  document.getElementById('modalTitle').innerText = `${code}  ·  ${name}`;
-  const tbody = document.querySelector('#modalTable tbody'); tbody.innerHTML = '';
-  const recs = allData.filter(r => r.code === code && r.status !== 'ปกติ');
-  if (!recs.length) {
-    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:32px;color:var(--muted);">ไม่มีประวัติความผิดปกติ</td></tr>`;
-  } else {
-    recs.forEach(r => {
-      tbody.innerHTML += `<tr>
-        <td style="font-size:12px;color:var(--text2);font-family:'Inter',monospace;">${r.date}</td>
-        <td><span class="badge ${badgeClass(r.status)}">${r.status}</span></td>
-        <td style="font-family:'Inter',monospace;font-size:12px;">${r.timeIn}</td>
-        <td style="font-family:'Inter',monospace;font-size:12px;">${r.timeOut}</td>
-        <td style="font-size:12px;color:var(--text2);">${r.clockCodeIn || '—'}</td>
-        <td style="font-size:12px;color:var(--text2);">${r.clockNameIn || '—'}</td>
-      </tr>`;
-    });
-  }
-  document.getElementById('leaveModal').classList.add('open');
-}
-function closeModal() { document.getElementById('leaveModal').classList.remove('open'); }
-
-// ─── Export ───────────────────────────────────────────────────
+// ─── Export ──────────────────────────────────────────────────
 function exportExcel() {
-  const isMatrix = document.getElementById('tab-matrix').classList.contains('active');
-  let arr, filename;
-
-  if (isMatrix) {
-    arr = matrixData.map(e => ({
-      'รหัสพนักงาน': e.code,
-      'ชื่อ':        e.name,
-      'สาย (ครั้ง)': e.lateCount,
-      'สาย (นาที)':  e.lateMins,
-      'ลืมตอก':     e.missed,
-      'ขาด':         e.absent,
-    }));
-    filename = 'Summary_Matrix.xlsx';
-  } else {
-    arr = filteredData.map(r => ({
-      'วันที่':            r.date,
-      'รหัสพนักงาน':      r.code,
-      'ชื่อ':              r.name,
-      'แผนก':              r.dept,
-      'เวลาเข้า':          r.timeIn,
-      'เวลาออก':           r.timeOut,
-      'ClockCode (เข้า)':  r.clockCodeIn,
-      'ClockName (เข้า)':  r.clockNameIn,
-      'ClockCode (ออก)':   r.clockCodeOut,
-      'ClockName (ออก)':   r.clockNameOut,
-      'สถานะ':             r.status,
-      'สาย (นาที)':        r.lateMins || 0,
-      'สถานที่':           r.location,
-    }));
-    filename = 'Attendance_Report.xlsx';
-  }
-
-  if (!arr.length) { alert('ไม่มีข้อมูลสำหรับ Export'); return; }
-  const ws = XLSX.utils.json_to_sheet(arr);
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, 'Report');
-  XLSX.writeFile(wb, filename);
-}
-
-// ─── Utilities ───────────────────────────────────────────────
-function switchTab(t) {
-  ['att','matrix','report'].forEach(id => {
-    document.getElementById('view-'+id).style.display = id === t ? 'block' : 'none';
-    document.getElementById('tab-'+id).classList.toggle('active', id === t);
+  if (!filtered.length) { alert('ไม่มีข้อมูล'); return; }
+  const rows = [];
+  filtered.forEach(g => {
+    g.punches.forEach(p => {
+      rows.push({
+        'วันที่':           g.date,
+        'รหัสพนักงาน':     g.code,
+        'ชื่อพนักงาน':     g.name,
+        'เวลาตอกบัตร':     p.time,
+        'ClockCode':       p.clockCode,
+        'ClockName':       p.clockName,
+        'สถานที่':         p.location,
+        'สถานะวัน':        g.status,
+        'สาย (นาที)':      g.lateMins || 0,
+      });
+    });
   });
+  const ws = XLSX.utils.json_to_sheet(rows);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Attendance');
+  XLSX.writeFile(wb, 'Attendance_Export.xlsx');
 }
-function clearFilters() {
-  activeStatusFilter = '';
-  ['searchInput','matrixSearch','reportSearch'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
-  ['empSelectAtt','empSelectMatrix','deptSelectAtt','deptSelectMatrix','deptSelectReport'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
-  document.querySelectorAll('.stat-card').forEach(el => el.classList.remove('active'));
-  applyFilters(); renderMatrixTable(); renderReportTab();
+
+// ─── Modal ───────────────────────────────────────────────────
+function openModal(code, name) {
+  document.getElementById('modalTitle').innerText = `${code} · ${name}`;
+  const recs = allGroups.filter(g => g.code === code);
+  let html = '';
+  recs.forEach(g => {
+    html += `<div style="padding:10px 20px;border-bottom:1px solid var(--line);">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+        <span style="font-size:12px;font-family:'IBM Plex Mono',monospace;color:var(--ink2);">${g.date}</span>
+        <span class="badge ${badgeCls(g.status)}">${g.status}</span>
+        ${g.lateMins > 0 ? `<span style="font-size:11px;color:var(--red);font-family:'IBM Plex Mono',monospace;">+${g.lateMins} น.</span>` : ''}
+      </div>
+      ${g.punches.map(p=>`
+        <div class="punch-row" style="padding:5px 0;">
+          <span class="punch-time">${p.time}</span>
+          <span class="punch-code">${p.clockCode||'—'}</span>
+          <span class="punch-name">${p.clockName||'—'}</span>
+          <span class="punch-location">${p.location||'—'}</span>
+        </div>`).join('')}
+    </div>`;
+  });
+  document.getElementById('modalBody').innerHTML = html || '<div class="empty">ไม่มีข้อมูล</div>';
+  document.getElementById('modal-overlay').classList.add('open');
 }
-function changePage(d) { currentPage += d; renderTable(); }
+function closeModal() { document.getElementById('modal-overlay').classList.remove('open'); }
 </script>
 </body>
 </html>
