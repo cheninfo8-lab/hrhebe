@@ -17,14 +17,8 @@
       --blue:    #1a56db;
       --blue-lt: #eff4ff;
       --red:     #c0392b;
-      --red-lt:  #fff5f5;
-      --red-bd:  #f5c6c2;
       --green:   #166534;
-      --green-lt:#f0fdf4;
-      --green-bd:#bbf7d0;
       --amber:   #92400e;
-      --amber-lt:#fffbeb;
-      --amber-bd:#fde68a;
     }
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     html { font-size: 14px; }
@@ -79,13 +73,14 @@
     .upload-sub   { font-size: 12px; color: var(--muted); margin-top: 6px; line-height: 1.6; }
 
     /* ── Stat strip ── */
-    .stat-strip { display: flex; gap: 12px; }
+    .stat-strip { display: flex; gap: 12px; flex-wrap: wrap; }
     .stat-box {
       background: var(--surface);
       border: 1px solid var(--line);
       border-radius: 10px;
       padding: 14px 20px;
-      min-width: 140px;
+      flex: 1;
+      min-width: 130px;
       cursor: pointer;
       transition: border-color .15s, box-shadow .12s;
     }
@@ -93,13 +88,9 @@
     .stat-box.active { border-color: var(--blue); background: var(--blue-lt); }
     .stat-box .label { font-size: 10px; font-weight: 600; letter-spacing: .07em; text-transform: uppercase; color: var(--muted); }
     .stat-box .value { font-size: 26px; font-weight: 600; margin-top: 4px; font-family: 'IBM Plex Mono', monospace; }
-    .stat-box.red   .value { color: var(--red); }
-    .stat-box.green .value { color: var(--green); }
 
-    /* ── Panel ── */
+    /* ── Panel & Toolbar ── */
     .panel { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
-
-    /* ── Toolbar ── */
     .toolbar {
       padding: 10px 16px;
       display: flex;
@@ -112,22 +103,8 @@
     .search-wrap svg { position: absolute; left: 9px; top: 50%; transform: translateY(-50%); color: var(--muted); pointer-events: none; }
     .search-wrap input { width: 100%; padding: 7px 10px 7px 32px; border: 1px solid var(--line); border-radius: 7px; font-size: 13px; font-family: inherit; outline: none; background: var(--bg); color: var(--ink); transition: border-color .15s; }
     .search-wrap input:focus { border-color: var(--blue); background: var(--surface); }
-    .search-wrap input::placeholder { color: var(--muted); }
-
-    .filter-pill {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      background: var(--blue-lt);
-      border: 1px solid #c3d5f8;
-      color: var(--blue);
-      border-radius: 99px;
-      padding: 3px 10px 3px 12px;
-      font-size: 12px;
-      font-weight: 600;
-    }
+    .filter-pill { display: flex; align-items: center; gap: 6px; background: var(--blue-lt); border: 1px solid #c3d5f8; color: var(--blue); border-radius: 99px; padding: 3px 10px 3px 12px; font-size: 12px; font-weight: 600; }
     .filter-pill button { background: none; border: none; cursor: pointer; color: var(--blue); font-size: 14px; line-height: 1; padding: 0; }
-
     .btn { border-radius: 7px; font-size: 12px; font-weight: 600; padding: 7px 14px; cursor: pointer; border: 1px solid transparent; display: inline-flex; align-items: center; gap: 6px; font-family: inherit; transition: all .12s; }
     .btn-ghost { background: var(--surface); border-color: var(--line); color: var(--ink2); }
     .btn-ghost:hover { border-color: var(--blue); color: var(--blue); }
@@ -153,94 +130,36 @@
     tbody tr { border-bottom: 1px solid var(--line); }
     tbody tr:last-child { border-bottom: none; }
     tbody tr:hover { background: #fafbfc; }
-    tbody td { padding: 0; vertical-align: top; }
-
-    /* punch group rows */
-    .row-date { padding: 12px 14px 12px 14px; font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: var(--ink2); border-right: 1px solid var(--line); white-space: nowrap; vertical-align: top; }
+    
+    .row-date { padding: 12px 14px; font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: var(--ink2); border-right: 1px solid var(--line); white-space: nowrap; vertical-align: top; }
     .row-emp  { padding: 12px 14px; vertical-align: top; border-right: 1px solid var(--line); }
     .row-emp .name { font-weight: 600; font-size: 13px; }
     .row-emp .code { font-size: 11px; color: var(--muted); font-family: 'IBM Plex Mono', monospace; margin-top: 1px; }
 
-    /* Modal punch styles */
-    .punch-row {
-      display: flex;
-      align-items: center;
-      gap: 0;
-      padding: 9px 14px;
-      border-bottom: 1px solid #f0f3f6;
-      font-size: 12px;
-    }
-    .punch-row:last-child { border-bottom: none; }
-    .punch-time { font-family: 'IBM Plex Mono', monospace; font-weight: 500; min-width: 54px; color: var(--ink); }
-    .punch-time.late { color: var(--red); }
-    .punch-code { color: var(--muted); min-width: 60px; margin-left: 12px; }
-    .punch-name { color: var(--ink2); flex: 1; margin-left: 8px; }
-    .punch-location { color: var(--muted); font-size: 11px; margin-left: 8px; text-align: right; flex-shrink: 0; max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-
-    /* New split cell styles */
+    /* Stacked Punches */
     .punch-cell-split { padding: 12px 14px; vertical-align: top; border-right: 1px solid var(--line); }
+    .punch-block { margin-bottom: 8px; }
+    .punch-block:last-child { margin-bottom: 0; }
     .punch-time-large { font-family: 'IBM Plex Mono', monospace; font-size: 14px; font-weight: 600; color: var(--ink); }
     .punch-time-large.late { color: var(--red); }
-    .punch-loc-small { color: var(--muted); font-size: 11px; margin-top: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 140px; }
+    .punch-loc-small { color: var(--muted); font-size: 11px; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 180px; }
 
-    /* badges */
-    .badge { display: inline-block; padding: 2px 8px; border-radius: 6px; font-size: 11px; font-weight: 600; border: 1px solid; }
-    .badge-ok     { background: var(--green-lt); color: var(--green); border-color: var(--green-bd); }
-    .badge-late   { background: var(--red-lt);   color: var(--red);   border-color: var(--red-bd); }
-    .badge-missed { background: var(--amber-lt); color: var(--amber); border-color: var(--amber-bd); }
+    /* Badges */
+    .badge { display: inline-block; padding: 3px 8px; border-radius: 6px; font-size: 11px; font-weight: 600; border: 1px solid; }
+    .badge-ok      { background: #f0fdf4; color: #166534; border-color: #bbf7d0; }
+    .badge-late    { background: #fff5f5; color: #c0392b; border-color: #f5c6c2; }
+    .badge-missed  { background: #fffbeb; color: #92400e; border-color: #fde68a; }
+    .badge-absent  { background: #fef2f2; color: #dc2626; border-color: #fca5a5; }
+    .badge-holiday { background: #f1f5f9; color: #475569; border-color: #cbd5e1; }
+    .badge-ot      { background: #fdf4ff; color: #9333ea; border-color: #e9d5ff; }
 
-    .status-cell { padding: 12px 14px; vertical-align: top; white-space: nowrap; border-left: 1px solid var(--line); }
-    .late-mins { font-size: 11px; color: var(--red); margin-top: 3px; font-family: 'IBM Plex Mono', monospace; }
+    .status-cell { padding: 12px 14px; vertical-align: top; white-space: nowrap; text-align: center; }
+    .late-mins { font-size: 11px; color: var(--red); margin-top: 3px; font-family: 'IBM Plex Mono', monospace; font-weight: 500; }
 
-    /* ── Footer / pagination ── */
-    .table-foot {
-      padding: 10px 16px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      border-top: 1px solid var(--line);
-      background: #f8fafb;
-    }
+    /* ── Footer ── */
+    .table-foot { padding: 10px 16px; display: flex; align-items: center; justify-content: space-between; border-top: 1px solid var(--line); background: #f8fafb; }
     .page-info { font-size: 12px; color: var(--muted); }
-
-    /* ── Empty ── */
     .empty { text-align: center; padding: 56px; color: var(--muted); font-size: 13px; }
-
-    /* ── Modal ── */
-    #modal-overlay {
-      display: none;
-      position: fixed;
-      inset: 0;
-      background: rgba(10,16,24,.5);
-      z-index: 200;
-      align-items: center;
-      justify-content: center;
-      padding: 20px;
-    }
-    #modal-overlay.open { display: flex; }
-    .modal-box {
-      background: var(--surface);
-      border-radius: 12px;
-      width: 100%;
-      max-width: 680px;
-      max-height: 85vh;
-      display: flex;
-      flex-direction: column;
-      box-shadow: 0 20px 60px rgba(0,0,0,.2);
-    }
-    .modal-head {
-      padding: 16px 20px;
-      border-bottom: 1px solid var(--line);
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-    .modal-body { overflow-y: auto; flex: 1; }
-
-    @media (max-width: 700px) {
-      .stat-strip { flex-wrap: wrap; }
-      .punch-location { display: none; }
-    }
   </style>
 </head>
 <body>
@@ -272,10 +191,7 @@
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
       </div>
       <div class="upload-title">คลิกหรือลากไฟล์มาวางที่นี่</div>
-      <div class="upload-sub">
-        รองรับ Excel (.xlsx, .xls) และ CSV<br>
-        คอลัมน์ที่ต้องการ: <strong>EmployeeCodeName · ClockDate · ClockTime · ClockCode · ClockName · LocationName</strong>
-      </div>
+      <div class="upload-sub">รองรับ Excel (.xlsx, .xls) และ CSV</div>
     </div>
   </div>
 
@@ -302,9 +218,9 @@
           <tr>
             <th style="min-width:100px;">วันที่</th>
             <th style="min-width:180px;">พนักงาน</th>
-            <th style="min-width:140px;">เวลาเข้า (เช้า)</th>
-            <th style="min-width:140px;">เวลาออก (บ่าย)</th>
-            <th style="min-width:100px;text-align:center;border-left:1px solid var(--line);">สถานะ</th>
+            <th style="min-width:140px;">เวลาเข้า (รอบเช้า)</th>
+            <th style="min-width:140px;">เวลาออก (รอบบ่าย)</th>
+            <th style="min-width:110px;text-align:center;">สถานะ</th>
           </tr>
         </thead>
         <tbody id="tableBody"></tbody>
@@ -322,26 +238,13 @@
 
 </div>
 
-<div id="modal-overlay" onclick="if(event.target===this)closeModal()">
-  <div class="modal-box">
-    <div class="modal-head">
-      <div>
-        <div style="font-weight:700;font-size:14px;" id="modalTitle"></div>
-        <div style="font-size:11px;color:var(--muted);margin-top:2px;">ประวัติการตอกบัตรทั้งหมดในวันนั้น</div>
-      </div>
-      <button onclick="closeModal()" class="btn btn-ghost" style="padding:4px 8px;">✕</button>
-    </div>
-    <div class="modal-body" id="modalBody"></div>
-  </div>
-</div>
-
 <script>
 // ─── Config ──────────────────────────────────────────────────
 const SHIFT_START_H = 9, SHIFT_START_M = 30;
-const LATE_GRACE_MINS = 30; // มาสายหลัง 10:00
+const LATE_GRACE_MINS = 30;
 
 // ─── State ───────────────────────────────────────────────────
-let allGroups = [];      // [{date, dateSort, code, name, punches[], status, lateMins}]
+let allGroups = [];
 let filtered  = [];
 let currentPage = 1;
 const PER_PAGE = 40;
@@ -369,11 +272,41 @@ function processFile(file) {
   r.readAsArrayBuffer(file);
 }
 
-// ─── Build groups ─────────────────────────────────────────────
-// Each group = one employee × one calendar date, with ALL punch rows
+// ─── Date helpers ────────────────────────────────────────────
+function toDateObj(d) {
+  if (!d) return null;
+  d = String(d).trim();
+  // yyyy-mm-dd
+  if (/^\d{4}-\d{2}-\d{2}/.test(d)) {
+    const [y, mo, day] = d.slice(0, 10).split('-');
+    return new Date(y, mo-1, day, 12, 0, 0);
+  }
+  // dd/mm/yyyy
+  if (/^\d{2}\/\d{2}\/\d{4}$/.test(d)) {
+    const p = d.split('/');
+    return new Date(p[2], p[1]-1, p[0], 12, 0, 0);
+  }
+  // mm/dd/yyyy
+  if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(d)) {
+    const p = d.split('/');
+    return new Date(p[2], p[0]-1, p[1], 12, 0, 0);
+  }
+  // Excel Serial
+  if (/^\d{4,6}$/.test(d)) {
+    const dt = new Date(Math.round((+d - 25569) * 86400 * 1000));
+    return new Date(dt.getUTCFullYear(), dt.getUTCMonth(), dt.getUTCDate(), 12, 0, 0);
+  }
+  return null;
+}
+
+// ─── Build groups & Fill Missing Dates ────────────────────────
 function buildGroups(raw) {
   const map = {};
+  const empMap = {};
+  let globalMin = null;
+  let globalMax = null;
 
+  // 1. นำข้อมูลดิบมาจัดกลุ่ม
   raw.forEach(row => {
     const empRaw   = String(row['EmployeeCodeName'] || '').trim();
     const dash     = empRaw.indexOf('-');
@@ -381,44 +314,85 @@ function buildGroups(raw) {
     const name     = dash > -1 ? empRaw.slice(dash + 1).trim() : '';
     const dateRaw  = String(row['ClockDate']    || '').trim();
     const timeStr  = String(row['ClockTime']    || '').trim();
-    const clockCode= String(row['ClockCode']    || '').trim();
-    const clockName= String(row['ClockName']    || '').trim();
     const location = String(row['LocationName'] || '').trim();
 
     if (!code || !dateRaw || !timeStr) return;
+    empMap[code] = name;
 
-    // Format date → dd/mm/yyyy
-    const dateFmt = formatDate(dateRaw);
-    const dateSort = toDateSort(dateRaw);
+    const dObj = toDateObj(dateRaw);
+    if (dObj) {
+      const t = dObj.getTime();
+      if (!globalMin || t < globalMin) globalMin = t;
+      if (!globalMax || t > globalMax) globalMax = t;
 
-    const key = code + '|' + dateRaw;
-    if (!map[key]) map[key] = { date: dateFmt, dateSort, code, name, punches: [] };
-    map[key].punches.push({ time: timeStr, clockCode, clockName, location });
+      const dd = String(dObj.getDate()).padStart(2, '0');
+      const mm = String(dObj.getMonth() + 1).padStart(2, '0');
+      const yyyy = dObj.getFullYear();
+      const dateFmt = `${dd}/${mm}/${yyyy}`;
+      const key = code + '|' + dateFmt;
+
+      if (!map[key]) map[key] = { date: dateFmt, dateSort: t, code, name, punches: [] };
+      map[key].punches.push({ time: timeStr, location });
+    }
   });
 
-  // Sort punches per group, then determine status
+  // 2. เติมเต็มวันที่ขาดหาย (เสาร์-อาทิตย์, ขาดงาน)
+  if (globalMin && globalMax) {
+    Object.keys(empMap).forEach(code => {
+      const name = empMap[code];
+      let curr = new Date(globalMin);
+      const end = new Date(globalMax);
+
+      while(curr <= end) {
+        const dd = String(curr.getDate()).padStart(2, '0');
+        const mm = String(curr.getMonth() + 1).padStart(2, '0');
+        const yyyy = curr.getFullYear();
+        const dateFmt = `${dd}/${mm}/${yyyy}`;
+        const key = code + '|' + dateFmt;
+
+        if (!map[key]) {
+          const dow = curr.getDay(); // 0=Sun, 6=Sat
+          let status = 'ขาดงาน';
+          if (dow === 0 || dow === 6) status = 'วันหยุด';
+
+          map[key] = { date: dateFmt, dateSort: curr.getTime(), code, name, punches: [], status: status, lateMins: 0 };
+        }
+        curr.setDate(curr.getDate() + 1); // ไปวันถัดไป
+      }
+    });
+  }
+
+  // 3. วิเคราะห์สถานะจากเวลาตอกบัตร
   allGroups = Object.values(map).map(g => {
-    g.punches.sort((a, b) => a.time.localeCompare(b.time));
+    if (g.punches.length > 0) {
+      g.punches.sort((a, b) => a.time.localeCompare(b.time));
 
-    const firstTime = g.punches[0].time;
-    const [fh, fm] = firstTime.split(':').map(Number);
-    const firstMins = fh * 60 + fm;
-    const shiftMins = SHIFT_START_H * 60 + SHIFT_START_M;
-    const lateThresh = shiftMins + LATE_GRACE_MINS;
+      const firstTime = g.punches[0].time;
+      const [fh, fm] = firstTime.split(':').map(Number);
+      const firstMins = fh * 60 + fm;
+      const shiftMins = SHIFT_START_H * 60 + SHIFT_START_M;
+      const lateThresh = shiftMins + LATE_GRACE_MINS;
 
-    let status = 'ปกติ', lateMins = 0;
-    if (g.punches.length === 1) {
-      status = 'ลืมตอกออก';
-    } else if (firstMins > lateThresh) {
-      status = 'มาสาย';
-      lateMins = firstMins - shiftMins;
+      const d = new Date(g.dateSort);
+      const dow = d.getDay();
+
+      let status = 'ปกติ';
+      let lateMins = 0;
+
+      if (g.punches.length === 1) {
+        status = 'ลืมตอกออก';
+      } else if (firstMins > lateThresh) {
+        status = 'มาสาย';
+        lateMins = firstMins - shiftMins;
+      } else if (dow === 0 || dow === 6) {
+        status = 'ทำงานวันหยุด';
+      }
+      g.status = status;
+      g.lateMins = lateMins;
     }
-    g.status   = status;
-    g.lateMins = lateMins;
     return g;
   });
 
-  // Sort by date asc, then code
   allGroups.sort((a, b) => a.dateSort - b.dateSort || a.code.localeCompare(b.code));
 
   renderStats();
@@ -429,60 +403,29 @@ function buildGroups(raw) {
   document.getElementById('exportBtn').style.display     = 'inline-flex';
 }
 
-// ─── Date helpers ────────────────────────────────────────────
-function formatDate(d) {
-  if (!d) return '';
-  d = String(d).trim();
-  if (/^\d{2}\/\d{2}\/\d{4}$/.test(d)) return d;
-  if (/^\d{4}-\d{2}-\d{2}/.test(d)) {
-    const [y, mo, day] = d.slice(0, 10).split('-');
-    return `${day}/${mo}/${y}`;
-  }
-  if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(d)) {
-    const p = d.split('/');
-    return `${p[1].padStart(2,'0')}/${p[0].padStart(2,'0')}/${p[2]}`;
-  }
-  if (/^\d{4,6}$/.test(d)) {
-    const dt = new Date(Math.round((+d - 25569) * 86400 * 1000));
-    const dd = String(dt.getUTCDate()).padStart(2,'0');
-    const mm = String(dt.getUTCMonth()+1).padStart(2,'0');
-    const yy = dt.getUTCFullYear();
-    return `${dd}/${mm}/${yy}`;
-  }
-  return d;
-}
-function toDateSort(d) {
-  d = String(d).trim();
-  if (/^\d{4}-\d{2}-\d{2}/.test(d)) return new Date(d.slice(0,10)).getTime();
-  if (/^\d{2}\/\d{2}\/\d{4}$/.test(d)) { const p=d.split('/'); return new Date(`${p[2]}-${p[1]}-${p[0]}`).getTime(); }
-  if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(d)) { const p=d.split('/'); return new Date(`${p[2]}-${p[0].padStart(2,'0')}-${p[1].padStart(2,'0')}`).getTime(); }
-  if (/^\d{4,6}$/.test(d)) return (parseInt(d) - 25569) * 86400000;
-  return 0;
-}
-
 // ─── Stats ───────────────────────────────────────────────────
 function renderStats() {
   const total  = allGroups.length;
   const late   = allGroups.filter(g => g.status === 'มาสาย').length;
   const missed = allGroups.filter(g => g.status === 'ลืมตอกออก').length;
-  const normal = allGroups.filter(g => g.status === 'ปกติ').length;
+  const absent = allGroups.filter(g => g.status === 'ขาดงาน').length;
 
   document.getElementById('statStrip').innerHTML = `
-    <div class="stat-box green ${activeStatus===''?'active':''}" onclick="setStatusFilter('')">
+    <div class="stat-box ${activeStatus===''?'active':''}" onclick="setStatusFilter('')">
       <div class="label">ทั้งหมด</div>
       <div class="value" style="color:var(--ink);">${total}</div>
     </div>
-    <div class="stat-box green ${activeStatus==='ปกติ'?'active':''}" onclick="setStatusFilter('ปกติ')">
-      <div class="label">ปกติ</div>
-      <div class="value">${normal}</div>
+    <div class="stat-box ${activeStatus==='ขาดงาน'?'active':''}" onclick="setStatusFilter('ขาดงาน')">
+      <div class="label">ขาดงาน</div>
+      <div class="value" style="color:#dc2626;">${absent}</div>
     </div>
-    <div class="stat-box red ${activeStatus==='มาสาย'?'active':''}" onclick="setStatusFilter('มาสาย')">
+    <div class="stat-box ${activeStatus==='มาสาย'?'active':''}" onclick="setStatusFilter('มาสาย')">
       <div class="label">มาสาย</div>
-      <div class="value">${late}</div>
+      <div class="value" style="color:#c0392b;">${late}</div>
     </div>
     <div class="stat-box ${activeStatus==='ลืมตอกออก'?'active':''}" onclick="setStatusFilter('ลืมตอกออก')">
       <div class="label">ลืมตอกออก</div>
-      <div class="value" style="color:var(--amber);">${missed}</div>
+      <div class="value" style="color:#92400e;">${missed}</div>
     </div>
   `;
 }
@@ -509,17 +452,15 @@ function applyFilters() {
   currentPage = 1;
   renderTable();
 }
-function clearFilters() {
-  activeStatus = '';
-  document.getElementById('searchInput').value = '';
-  renderStats();
-  applyFilters();
-}
+function clearFilters() { activeStatus = ''; document.getElementById('searchInput').value = ''; renderStats(); applyFilters(); }
 
 // ─── Table ───────────────────────────────────────────────────
 function badgeCls(s) {
   if (s === 'ปกติ') return 'badge-ok';
   if (s === 'มาสาย') return 'badge-late';
+  if (s === 'วันหยุด') return 'badge-holiday';
+  if (s === 'ขาดงาน') return 'badge-absent';
+  if (s === 'ทำงานวันหยุด') return 'badge-ot';
   return 'badge-missed';
 }
 
@@ -538,28 +479,33 @@ function renderTable() {
 
   filtered.slice(start, end).forEach(g => {
     
-    // ดึงข้อมูลตอกบัตรครั้งแรกสุด (เข้า) และครั้งสุดท้าย (ออก)
-    const firstPunch = g.punches[0];
-    const lastPunch = g.punches.length > 1 ? g.punches[g.punches.length - 1] : null;
+    // แบ่งตอกเช้า (ก่อน 12:00) และตอกบ่าย (ตั้งแต่ 12:00 เป็นต้นไป)
+    const morningPunches = g.punches.filter(p => p.time < "12:00");
+    const afternoonPunches = g.punches.filter(p => p.time >= "12:00");
 
-    // ฟังก์ชันช่วยสร้าง HTML สำหรับช่องเวลา
-    const renderPunchCell = (p, isFirst) => {
-      if (!p) return '<span style="color:var(--muted)">—</span>';
-      const isLate = isFirst && g.status === 'มาสาย';
-      const timeCls = isLate ? 'punch-time-large late' : 'punch-time-large';
-      return `
-        <div class="${timeCls}">${p.time}</div>
-        <div class="punch-loc-small" title="${p.location}">${p.location || '—'}</div>
-      `;
+    const renderPunches = (punches, isMorning) => {
+      if (!punches || punches.length === 0) return '<span style="color:var(--muted)">—</span>';
+      
+      // แสดงทุกการตอกบัตรที่อยู่ในช่วงเวลานั้น เรียงต่อกันลงมา
+      return punches.map((p, index) => {
+        const isLate = isMorning && index === 0 && g.status === 'มาสาย';
+        const timeCls = isLate ? 'punch-time-large late' : 'punch-time-large';
+        return `
+          <div class="punch-block">
+            <div class="${timeCls}">${p.time}</div>
+            <div class="punch-loc-small" title="${p.location}">${p.location || '—'}</div>
+          </div>
+        `;
+      }).join('');
     };
 
-    const morningHtml = renderPunchCell(firstPunch, true);
-    const afternoonHtml = renderPunchCell(lastPunch, false);
+    const morningHtml = renderPunches(morningPunches, true);
+    const afternoonHtml = renderPunches(afternoonPunches, false);
 
     const badgeHtml = `<span class="badge ${badgeCls(g.status)}">${g.status}</span>` +
       (g.lateMins > 0 ? `<div class="late-mins">+${g.lateMins} นาที</div>` : '');
 
-    tbody.innerHTML += `<tr style="cursor: pointer;" onclick="openModal('${g.code}', '${g.name}')" title="คลิกเพื่อดูประวัติการตอกบัตรทั้งหมดในวันนี้">
+    tbody.innerHTML += `<tr>
       <td class="row-date">${g.date}</td>
       <td class="row-emp">
         <div class="name">${g.name}</div>
@@ -567,7 +513,7 @@ function renderTable() {
       </td>
       <td class="punch-cell-split">${morningHtml}</td>
       <td class="punch-cell-split">${afternoonHtml}</td>
-      <td class="status-cell" style="text-align:center;">${badgeHtml}</td>
+      <td class="status-cell">${badgeHtml}</td>
     </tr>`;
   });
 
@@ -589,18 +535,15 @@ function exportExcel() {
   if (!filtered.length) { alert('ไม่มีข้อมูล'); return; }
   const rows = [];
   filtered.forEach(g => {
-    // ส่งออกโดยใช้เวลาเข้าและออกแทน
-    const firstPunch = g.punches[0];
-    const lastPunch = g.punches.length > 1 ? g.punches[g.punches.length - 1] : null;
+    const mPunches = g.punches.filter(p => p.time < "12:00").map(p => p.time).join(', ');
+    const aPunches = g.punches.filter(p => p.time >= "12:00").map(p => p.time).join(', ');
 
     rows.push({
       'วันที่':           g.date,
       'รหัสพนักงาน':     g.code,
       'ชื่อพนักงาน':     g.name,
-      'เวลาเข้า (เช้า)':  firstPunch ? firstPunch.time : '—',
-      'เวลาออก (บ่าย)':   lastPunch ? lastPunch.time : '—',
-      'สถานที่ (เข้า)':  firstPunch ? firstPunch.location : '—',
-      'สถานที่ (ออก)':   lastPunch ? lastPunch.location : '—',
+      'เวลาเข้าทั้งหมด (เช้า)': mPunches || '—',
+      'เวลาออกทั้งหมด (บ่าย)': aPunches || '—',
       'สถานะวัน':        g.status,
       'สาย (นาที)':      g.lateMins || 0,
     });
@@ -610,32 +553,6 @@ function exportExcel() {
   XLSX.utils.book_append_sheet(wb, ws, 'Attendance');
   XLSX.writeFile(wb, 'Attendance_Export.xlsx');
 }
-
-// ─── Modal ───────────────────────────────────────────────────
-function openModal(code, name) {
-  document.getElementById('modalTitle').innerText = `${code} · ${name}`;
-  const recs = allGroups.filter(g => g.code === code);
-  let html = '';
-  recs.forEach(g => {
-    html += `<div style="padding:10px 20px;border-bottom:1px solid var(--line);">
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
-        <span style="font-size:12px;font-family:'IBM Plex Mono',monospace;color:var(--ink2);">${g.date}</span>
-        <span class="badge ${badgeCls(g.status)}">${g.status}</span>
-        ${g.lateMins > 0 ? `<span style="font-size:11px;color:var(--red);font-family:'IBM Plex Mono',monospace;">+${g.lateMins} น.</span>` : ''}
-      </div>
-      ${g.punches.map(p=>`
-        <div class="punch-row" style="padding:5px 0;">
-          <span class="punch-time">${p.time}</span>
-          <span class="punch-code">${p.clockCode||'—'}</span>
-          <span class="punch-name">${p.clockName||'—'}</span>
-          <span class="punch-location">${p.location||'—'}</span>
-        </div>`).join('')}
-    </div>`;
-  });
-  document.getElementById('modalBody').innerHTML = html || '<div class="empty">ไม่มีข้อมูล</div>';
-  document.getElementById('modal-overlay').classList.add('open');
-}
-function closeModal() { document.getElementById('modal-overlay').classList.remove('open'); }
 </script>
 </body>
 </html>
