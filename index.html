@@ -553,25 +553,31 @@ function exportExcel() {
     const mPunches = g.punches.filter(p => p.time < "12:00");
     const aPunches = g.punches.filter(p => p.time >= "12:00");
 
-    // ฟังก์ชันช่วยดึงข้อมูลและเชื่อมด้วยลูกน้ำ (กรณีมีการตอกมากกว่า 1 ครั้งในรอบนั้น)
-    const getM = (key) => mPunches.length ? mPunches.map(p => p[key] || '—').join(', ') : '—';
-    const getA = (key) => aPunches.length ? aPunches.map(p => p[key] || '—').join(', ') : '—';
+    // หาจำนวนบรรทัดสูงสุดที่ต้องใช้ในวันนั้น (เช่น เช้าตอก 2 ครั้ง บ่ายตอก 1 ครั้ง = ต้องใช้ 2 บรรทัด)
+    // หรือถ้าไม่มีข้อมูลเลย (วันหยุด/ขาดงาน) ก็ยังคงมี 1 บรรทัด
+    const maxRows = Math.max(mPunches.length, aPunches.length, 1);
 
-    rows.push({
-      'วันที่':           g.date,
-      'รหัสพนักงาน':     g.code,
-      'ชื่อพนักงาน':     g.name,
-      'เช้า':            getM('time'),
-      'Clock Code เช้า': getM('clockCode'),
-      'Clock Name เช้า': getM('clockName'),
-      'สถานที่ เช้า':     getM('location'),
-      'บ่าย':            getA('time'),
-      'Clock Code บ่าย': getA('clockCode'),
-      'Clock Name บ่าย': getA('clockName'),
-      'สถานที่ บ่าย':     getA('location'),
-      'สถานะวัน':        g.status,
-      'สาย (นาที)':      g.lateMins || 0,
-    });
+    for (let i = 0; i < maxRows; i++) {
+      // ดึงข้อมูลตามรอบ (ถ้าไม่มีจะคืนค่าเป็น undefined)
+      const m = mPunches[i] || {};
+      const a = aPunches[i] || {};
+
+      rows.push({
+        'วันที่':           g.date,
+        'รหัสพนักงาน':     g.code,
+        'ชื่อพนักงาน':     g.name,
+        'เช้า':            m.time || '—',
+        'Clock Code เช้า': m.clockCode || '—',
+        'Clock Name เช้า': m.clockName || '—',
+        'สถานที่ เช้า':     m.location || '—',
+        'บ่าย':            a.time || '—',
+        'Clock Code บ่าย': a.clockCode || '—',
+        'Clock Name บ่าย': a.clockName || '—',
+        'สถานที่ บ่าย':     a.location || '—',
+        'สถานะวัน':        g.status,
+        'สาย (นาที)':      g.lateMins || 0,
+      });
+    }
   });
 
   const ws = XLSX.utils.json_to_sheet(rows);
