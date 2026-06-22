@@ -1,180 +1,784 @@
 <!DOCTYPE html>
 <html lang="th">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>HR Attendance Dashboard</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HR Attendance Analytics</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Sarabun:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #f0f2f5; --surface: #ffffff; --surface2: #f7f8fa;
+      --border: #e3e7ed; --border2: #cdd3dc;
+      --text: #1a2035; --text2: #4a5568; --muted: #8b96a8;
+      --accent: #2d4a7a; --accent-lt: #e8edf5; --accent-tx: #2d4a7a;
+      --c-ok: #166534;   --bg-ok: #f0fdf4;   --bd-ok: #bbf7d0;
+      --c-late: #92400e; --bg-late: #fffbeb; --bd-late: #fde68a;
+      --c-miss: #9a3412; --bg-miss: #fff7ed; --bd-miss: #fed7aa;
+      --c-abs: #991b1b;  --bg-abs: #fef2f2;  --bd-abs: #fecaca;
+      --c-lv: #1e3a8a;   --bg-lv: #eff6ff;   --bd-lv: #bfdbfe;
+      --c-hol: #374151;  --bg-hol: #f9fafb;  --bd-hol: #e5e7eb;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { font-size: 14px; }
+    body { font-family: 'Sarabun', 'Inter', sans-serif; background: var(--bg); color: var(--text); line-height: 1.5; padding: 20px 24px; }
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-track { background: var(--surface2); }
+    ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+
+    .card  { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; }
+    .panel { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+
+    /* Stat cards */
+    .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; cursor: pointer; transition: box-shadow .15s, border-color .15s, transform .12s; padding: 14px 16px; text-align: center; }
+    .stat-card:hover { box-shadow: 0 4px 12px rgba(45,74,122,.10); border-color: var(--accent); transform: translateY(-1px); }
+    .stat-card.active { border-color: var(--accent); background: var(--accent-lt); box-shadow: 0 0 0 3px rgba(45,74,122,.12); }
+    .stat-label { font-size: 10px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+    .stat-value { font-size: 22px; font-weight: 700; margin-top: 2px; font-family: 'Inter', sans-serif; }
+
+    /* Tabs */
+    .tab-bar { display: flex; border-bottom: 1px solid var(--border); background: var(--surface2); padding: 0 16px; }
+    .tab-btn { padding: 11px 18px; font-size: 13px; font-weight: 500; border: none; background: none; cursor: pointer; color: var(--muted); border-bottom: 2px solid transparent; margin-bottom: -1px; transition: color .15s, border-color .15s; font-family: 'Sarabun', sans-serif; }
+    .tab-btn:hover { color: var(--text2); }
+    .tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); font-weight: 600; }
+
+    /* Form controls */
+    input, select { background: var(--surface); border: 1px solid var(--border2); color: var(--text); border-radius: 7px; padding: 7px 11px; font-size: 13px; outline: none; transition: border-color .15s, box-shadow .15s; font-family: 'Sarabun', sans-serif; }
+    input:focus, select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(45,74,122,.10); }
+    input::placeholder { color: var(--muted); }
+
+    /* Buttons */
+    .btn { border-radius: 7px; font-weight: 600; font-size: 13px; padding: 7px 16px; cursor: pointer; transition: all .15s; font-family: 'Sarabun', sans-serif; border: 1px solid transparent; display: inline-flex; align-items: center; gap: 6px; }
+    .btn-primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+    .btn-primary:hover { background: #1e3560; }
+    .btn-ghost { background: var(--surface); color: var(--text2); border-color: var(--border2); }
+    .btn-ghost:hover { border-color: var(--accent); color: var(--accent); }
+    .btn-success { background: #166534; color: #fff; border-color: #166534; }
+    .btn-success:hover { background: #14532d; }
+    .btn-danger { background: #fef2f2; color: #991b1b; border-color: #fecaca; }
+
+    /* Badges */
+    .badge { display: inline-block; padding: 2px 9px; border-radius: 99px; font-size: 11px; font-weight: 600; border: 1px solid; white-space: nowrap; }
+    .badge-normal  { background: var(--bg-ok);   color: var(--c-ok);   border-color: var(--bd-ok); }
+    .badge-late    { background: var(--bg-late);  color: var(--c-late); border-color: var(--bd-late); }
+    .badge-missed  { background: var(--bg-miss);  color: var(--c-miss); border-color: var(--bd-miss); }
+    .badge-absent  { background: var(--bg-abs);   color: var(--c-abs);  border-color: var(--bd-abs); }
+    .badge-early   { background: #fffbeb;          color: #78350f;       border-color: #fcd34d; }
+    .badge-holiday { background: var(--bg-hol);   color: var(--c-hol);  border-color: var(--bd-hol); }
+
+    /* Table */
+    table { border-collapse: collapse; width: 100%; }
+    thead th { background: var(--surface2); color: var(--muted); font-size: 10px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; padding: 10px 14px; border-bottom: 1px solid var(--border); white-space: nowrap; }
+    tbody tr { border-bottom: 1px solid var(--border); transition: background .08s; }
+    tbody tr:last-child { border-bottom: none; }
+    tbody tr:hover { background: #f7f9fc; }
+    tbody td { padding: 9px 14px; font-size: 13px; vertical-align: middle; }
+    .sticky-col  { position: sticky; left: 0; z-index: 10; background: var(--surface); border-right: 1px solid var(--border); }
+    .sticky-head { position: sticky; left: 0; z-index: 20; background: var(--surface2); border-right: 1px solid var(--border); }
+
+    /* Filter tag */
+    .filter-tag { background: var(--accent-lt); color: var(--accent-tx); border: 1px solid #c5d3e8; border-radius: 99px; padding: 2px 10px; font-size: 11px; font-weight: 600; }
+
+    /* Toolbar */
+    .toolbar { padding: 10px 16px; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; border-bottom: 1px solid var(--border); background: var(--surface); }
+
+    /* Report rows */
+    .person-row { padding: 14px 20px; border-bottom: 1px solid var(--border); transition: background .08s; }
+    .person-row:last-child { border-bottom: none; }
+    .person-row:hover { background: var(--surface2); }
+    .tag-late   { background: var(--bg-late); color: var(--c-late); border: 1px solid var(--bd-late); border-radius: 6px; padding: 2px 8px; font-size: 11px; font-weight: 600; }
+    .tag-absent { background: var(--bg-abs);  color: var(--c-abs);  border: 1px solid var(--bd-abs);  border-radius: 6px; padding: 2px 8px; font-size: 11px; font-weight: 600; }
+    .tag-missed { background: var(--bg-miss); color: var(--c-miss); border: 1px solid var(--bd-miss); border-radius: 6px; padding: 2px 8px; font-size: 11px; font-weight: 600; }
+
+    /* Sortable */
+    th.sortable { cursor: pointer; user-select: none; }
+    th.sortable:hover { color: var(--accent); background: var(--accent-lt); }
+    th.sortable::after { content: "  ⇅"; opacity: .3; font-size: 9px; }
+    th.sort-asc  { color: var(--accent); }
+    th.sort-asc::after  { content: "  ↑"; opacity: 1; }
+    th.sort-desc { color: var(--accent); }
+    th.sort-desc::after { content: "  ↓"; opacity: 1; }
+
+    /* Upload zone */
+    #dropzone { border: 2px dashed var(--border2); border-radius: 10px; padding: 40px; text-align: center; cursor: pointer; transition: all .15s; }
+    #dropzone:hover, #dropzone.drag-over { border-color: var(--accent); background: var(--accent-lt); }
+    #dropzone svg { width: 36px; height: 36px; color: var(--accent); margin-bottom: 10px; }
+
+    /* Modal */
+    #leaveModal { display: none; position: fixed; inset: 0; z-index: 50; align-items: center; justify-content: center; padding: 16px; background: rgba(15,20,35,.45); }
+    #leaveModal.open { display: flex; }
+
+    .page-info { font-size: 12px; color: var(--muted); }
+
+    @keyframes slideUp { from { transform: translateY(10px); opacity: 0 } to { transform: translateY(0); opacity: 1 } }
+    .slide-up { animation: slideUp .2s ease-out; }
+  </style>
 </head>
-<body class="bg-slate-50 font-sans text-slate-800 p-6 md:p-12 min-h-screen">
-    <div class="max-w-7xl mx-auto space-y-8">
-        
-        <header>
-            <h1 class="text-3xl font-bold tracking-tight text-slate-900">Attendance Analysis</h1>
-            <p class="text-slate-500 mt-2">อัปโหลดไฟล์บันทึกเวลาเพื่อวิเคราะห์การเข้างาน (กะงาน 09:30 - 18:30 น.)</p>
-        </header>
+<body>
+<div style="max-width:1360px; margin:0 auto; display:flex; flex-direction:column; gap:16px;">
 
-        <div id="dropzone" class="border-2 border-dashed border-slate-300 bg-white hover:border-slate-400 rounded-xl p-10 text-center transition-all cursor-pointer">
-            <input type="file" id="fileInput" accept=".xlsx, .xls, .csv" class="hidden" />
-            <div class="flex flex-col items-center pointer-events-none">
-                <div class="p-4 bg-indigo-50 text-indigo-600 rounded-full mb-4">
-                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
-                </div>
-                <span class="text-lg font-medium text-slate-700">คลิกหรือลากไฟล์มาวางที่นี่</span>
-                <span class="text-sm text-slate-500 mt-2">รองรับไฟล์ Excel (.xlsx) และ CSV</span>
-                <p id="fileNameDisplay" class="mt-4 text-sm font-semibold text-indigo-600 hidden"></p>
-            </div>
-        </div>
+  <!-- Header -->
+  <div class="card" style="padding:14px 20px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
+    <div style="display:flex; align-items:center; gap:14px;">
+      <div style="width:36px;height:36px;background:var(--accent);border-radius:8px;display:flex;align-items:center;justify-content:center;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+      </div>
+      <div>
+        <div style="font-size:15px;font-weight:700;letter-spacing:-.01em;">HR Attendance Analytics</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:1px;">กะงาน 09:30–18:30 น. · ตรวจจับลืมตอกอัตโนมัติ</div>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;">
+      <button id="exportBtn" onclick="exportExcel()" class="btn btn-success" style="display:none;">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Export Excel
+      </button>
+      <button onclick="document.getElementById('fileInput').click()" class="btn btn-primary">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        อัปโหลดไฟล์
+      </button>
+      <input type="file" id="fileInput" accept=".xlsx,.xls,.csv" style="display:none;" onchange="handleFile(event)">
+    </div>
+  </div>
 
-        <div id="tableContainer" class="hidden bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
-            <div class="overflow-x-auto">
-                <table class="w-full text-left border-collapse">
-                    <thead>
-                        <tr class="bg-slate-50/80 border-b border-slate-200 text-sm uppercase tracking-wider text-slate-500">
-                            <th class="py-4 px-6 font-semibold">พนักงาน</th>
-                            <th class="py-4 px-6 font-semibold">วันที่</th>
-                            <th class="py-4 px-6 font-semibold">เวลาเข้า (In)</th>
-                            <th class="py-4 px-6 font-semibold">เวลาออก (Out)</th>
-                            <th class="py-4 px-6 font-semibold">สถานะ</th>
-                            <th class="py-4 px-6 font-semibold">สถานที่เช็คอิน</th>
-                        </tr>
-                    </thead>
-                    <tbody id="tableBody" class="divide-y divide-slate-100"></tbody>
-                </table>
-            </div>
-        </div>
+  <!-- Upload zone (shown before file load) -->
+  <div id="uploadSection" class="card" style="padding:20px;">
+    <div id="dropzone" onclick="document.getElementById('fileInput').click()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+      <div style="font-size:15px;font-weight:600;color:var(--text2);">คลิกหรือลากไฟล์มาวางที่นี่</div>
+      <div style="font-size:12px;color:var(--muted);margin-top:4px;">รองรับ Excel (.xlsx, .xls) และ CSV</div>
+      <div style="font-size:11px;color:var(--muted);margin-top:8px;">คอลัมน์ที่ต้องการ: <strong>EmployeeCodeName, ClockDate, ClockTime, ClockCode, ClockName, LocationName</strong></div>
+    </div>
+  </div>
+
+  <!-- Summary grid -->
+  <div id="summaryGrid" style="display:none; grid-template-columns:repeat(5,1fr); gap:10px;"></div>
+
+  <!-- Main content -->
+  <div id="mainContent" style="display:none;" class="panel">
+    <div class="tab-bar">
+      <button onclick="switchTab('att')"    id="tab-att"    class="tab-btn active">บันทึกรายวัน</button>
+      <button onclick="switchTab('matrix')" id="tab-matrix" class="tab-btn">ตารางสรุปพนักงาน</button>
+      <button onclick="switchTab('report')" id="tab-report" class="tab-btn">สรุปรายบุคคล</button>
     </div>
 
-    <script>
-        const fileInput = document.getElementById('fileInput');
-        const dropzone = document.getElementById('dropzone');
-        const fileNameDisplay = document.getElementById('fileNameDisplay');
-        const tableContainer = document.getElementById('tableContainer');
-        const tableBody = document.getElementById('tableBody');
+    <!-- Attendance tab -->
+    <div id="view-att">
+      <div class="toolbar" style="justify-content:space-between;">
+        <div id="activeFilterBadge" style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;"></div>
+        <div style="display:flex;gap:7px;flex-wrap:wrap;margin-left:auto;">
+          <select id="deptSelectAtt"  onchange="applyFilters()"><option value="">ทุกแผนก</option></select>
+          <select id="empSelectAtt"   onchange="handleEmpSelect(this.value)"><option value="">เลือกพนักงาน</option></select>
+          <input  type="text" id="searchInput" onkeyup="applyFilters()" placeholder="ค้นหา..." style="width:160px;">
+          <button onclick="clearFilters()" class="btn btn-ghost">รีเซ็ต</button>
+        </div>
+      </div>
+      <div style="overflow-x:auto;">
+        <table id="attendanceTable">
+          <thead><tr>
+            <th class="sortable" onclick="sortBy('date')"   id="th-date"   style="text-align:left;min-width:96px;">วันที่</th>
+            <th class="sortable" onclick="sortBy('code')"   id="th-code"   style="text-align:left;min-width:80px;">รหัสพนักงาน</th>
+            <th class="sortable" onclick="sortBy('name')"   id="th-name"   style="text-align:left;min-width:160px;">ชื่อพนักงาน / แผนก</th>
+            <th style="text-align:center;min-width:80px;">เข้างาน</th>
+            <th style="text-align:center;min-width:80px;">ออกงาน</th>
+            <th style="text-align:left;min-width:100px;">ClockCode (เข้า)</th>
+            <th style="text-align:left;min-width:120px;">ClockName (เข้า)</th>
+            <th style="text-align:left;min-width:100px;">ClockCode (ออก)</th>
+            <th style="text-align:left;min-width:120px;">ClockName (ออก)</th>
+            <th class="sortable" onclick="sortBy('status')" id="th-status" style="text-align:center;min-width:100px;">สถานะ</th>
+            <th style="text-align:left;min-width:140px;">สถานที่</th>
+          </tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <div style="padding:10px 16px;display:flex;justify-content:space-between;align-items:center;background:var(--surface2);border-top:1px solid var(--border);">
+        <span class="page-info" id="pageInfo"></span>
+        <div style="display:flex;gap:6px;">
+          <button onclick="changePage(-1)" id="prevBtn" class="btn btn-ghost" style="font-size:12px;padding:5px 12px;">← ก่อนหน้า</button>
+          <button onclick="changePage(1)"  id="nextBtn" class="btn btn-ghost" style="font-size:12px;padding:5px 12px;">ถัดไป →</button>
+        </div>
+      </div>
+    </div>
 
-        dropzone.addEventListener('click', () => fileInput.click());
-        dropzone.addEventListener('dragover', (e) => { e.preventDefault(); dropzone.classList.add('border-indigo-500', 'bg-indigo-50'); });
-        dropzone.addEventListener('dragleave', () => { dropzone.classList.remove('border-indigo-500', 'bg-indigo-50'); });
-        dropzone.addEventListener('drop', (e) => {
-            e.preventDefault();
-            dropzone.classList.remove('border-indigo-500', 'bg-indigo-50');
-            if(e.dataTransfer.files.length) {
-                fileInput.files = e.dataTransfer.files;
-                processFile(e.dataTransfer.files[0]);
-            }
-        });
+    <!-- Matrix tab -->
+    <div id="view-matrix" style="display:none;">
+      <div class="toolbar" style="justify-content:space-between;">
+        <div style="display:flex;gap:6px;flex-wrap:wrap;">
+          <span class="badge badge-late">สาย</span>
+          <span class="badge badge-absent">ขาด</span>
+          <span class="badge badge-missed">ลืมตอก</span>
+        </div>
+        <div style="display:flex;gap:7px;flex-wrap:wrap;margin-left:auto;">
+          <select id="deptSelectMatrix" onchange="renderMatrixTable()"><option value="">ทุกแผนก</option></select>
+          <select id="empSelectMatrix"  onchange="handleEmpSelect(this.value)"><option value="">เลือกพนักงาน</option></select>
+          <input  type="text" id="matrixSearch" onkeyup="renderMatrixTable()" placeholder="ค้นหา..." style="width:160px;">
+        </div>
+      </div>
+      <div style="overflow-x:auto;max-height:62vh;">
+        <table id="matrixTable"><thead></thead><tbody></tbody></table>
+      </div>
+    </div>
 
-        fileInput.addEventListener('change', (e) => {
-            if(e.target.files.length) processFile(e.target.files[0]);
-        });
+    <!-- Report tab -->
+    <div id="view-report" style="display:none;">
+      <div class="toolbar" style="justify-content:space-between;flex-wrap:wrap;gap:10px;">
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+          <span style="font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);">แสดง</span>
+          <button onclick="toggleReportFilter('late')"   id="rf-late"   class="btn btn-ghost" style="font-size:12px;padding:4px 12px;">⏱ สาย</button>
+          <button onclick="toggleReportFilter('absent')" id="rf-absent" class="btn btn-ghost" style="font-size:12px;padding:4px 12px;">✗ ขาด</button>
+          <button onclick="toggleReportFilter('missed')" id="rf-missed" class="btn btn-ghost" style="font-size:12px;padding:4px 12px;">○ ลืมตอก</button>
+        </div>
+        <div style="display:flex;gap:7px;flex-wrap:wrap;margin-left:auto;">
+          <select id="deptSelectReport" onchange="renderReportTab()"><option value="">ทุกแผนก</option></select>
+          <input  type="text" id="reportSearch" onkeyup="renderReportTab()" placeholder="ค้นหา..." style="width:160px;">
+        </div>
+      </div>
+      <div style="overflow-y:auto;max-height:65vh;">
+        <div id="reportList"></div>
+      </div>
+    </div>
+  </div>
+</div>
 
-        function processFile(file) {
-            fileNameDisplay.textContent = 'ไฟล์ที่เลือก: ' + file.name;
-            fileNameDisplay.classList.remove('hidden');
+<!-- Modal -->
+<div id="leaveModal" onclick="if(event.target===this)closeModal()">
+  <div class="panel slide-up" style="width:100%;max-width:700px;max-height:85vh;display:flex;flex-direction:column;">
+    <div style="padding:14px 20px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border);background:var(--surface2);flex-shrink:0;">
+      <div>
+        <div style="font-weight:700;font-size:14px;" id="modalTitle"></div>
+        <div style="font-size:11px;color:var(--muted);margin-top:2px;">ประวัติความผิดปกติ</div>
+      </div>
+      <button onclick="closeModal()" class="btn btn-ghost" style="padding:5px 8px;">✕</button>
+    </div>
+    <div style="overflow-y:auto;flex:1;">
+      <table id="modalTable" style="width:100%;">
+        <thead><tr>
+          <th style="text-align:left;width:110px;">วันที่</th>
+          <th style="text-align:left;">สถานะ</th>
+          <th style="text-align:left;">เข้า</th>
+          <th style="text-align:left;">ออก</th>
+          <th style="text-align:left;">ClockCode (เข้า)</th>
+          <th style="text-align:left;">ClockName (เข้า)</th>
+        </tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+</div>
 
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const data = e.target.result;
-                const workbook = XLSX.read(data, { type: 'binary' });
-                const sheetName = workbook.SheetNames[0];
-                const sheet = workbook.Sheets[sheetName];
-                const rawData = XLSX.utils.sheet_to_json(sheet, { raw: false });
-                analyzeData(rawData);
-            };
-            reader.readAsBinaryString(file);
-        }
+<script>
+// ─── Constants ───────────────────────────────────────────────
+const SHIFT_START = '09:30';
+const SHIFT_END   = '18:30';
+const LATE_GRACE  = 30; // minutes
+const ROWS_PER_PAGE = 50;
 
-        function analyzeData(rawData) {
-            const grouped = {};
+// ─── State ───────────────────────────────────────────────────
+let allData = [], filteredData = [], matrixData = [];
+let currentPage = 1;
+let activeStatusFilter = '';
+let sortCol = 'date', sortDir = 'asc';
+let reportFilterSet = new Set(['late','absent','missed']);
+let allDepts = [];
 
-            rawData.forEach(row => {
-                const empName = row.EmployeeCodeName;
-                const dateStr = row.ClockDate;
-                const timeStr = row.ClockTime;
-                const location = row.LocationName;
+// ─── File handling ───────────────────────────────────────────
+const dropzone = document.getElementById('dropzone');
+dropzone.addEventListener('dragover',  e => { e.preventDefault(); dropzone.classList.add('drag-over'); });
+dropzone.addEventListener('dragleave', () => dropzone.classList.remove('drag-over'));
+dropzone.addEventListener('drop', e => {
+  e.preventDefault(); dropzone.classList.remove('drag-over');
+  if (e.dataTransfer.files[0]) processFile(e.dataTransfer.files[0]);
+});
 
-                if (!empName || !dateStr || !timeStr) return;
+function handleFile(event) {
+  const file = event.target.files[0];
+  if (file) processFile(file);
+}
 
-                const key = empName + '_' + dateStr;
-                if (!grouped[key]) {
-                    grouped[key] = { employee: empName, date: dateStr, times: [], locations: new Set() };
-                }
-                grouped[key].times.push(timeStr);
-                if (location) grouped[key].locations.add(location);
-            });
+function processFile(file) {
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const wb   = XLSX.read(new Uint8Array(e.target.result), { type: 'array' });
+      const json = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { defval: '' });
+      analyzeData(json);
+    } catch(err) {
+      alert('อ่านไฟล์ไม่ได้: ' + err);
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
 
-            const processedData = Object.values(grouped).map(item => {
-                item.times.sort();
-                const firstIn = item.times[0];
-                const lastOut = item.times[item.times.length - 1];
-                const locs = Array.from(item.locations);
+// ─── Core: parse & group ──────────────────────────────────────
+function analyzeData(raw) {
+  // Group by employee+date
+  const grouped = {};
+  raw.forEach(row => {
+    // Parse EmployeeCodeName  →  "EMP001 - สมชาย ใจดี"  or "EMP001-สมชาย"
+    const empRaw   = String(row['EmployeeCodeName'] || '').trim();
+    const dashIdx  = empRaw.indexOf('-');
+    const empCode  = dashIdx > -1 ? empRaw.slice(0, dashIdx).trim() : empRaw;
+    const empName  = dashIdx > -1 ? empRaw.slice(dashIdx + 1).trim() : '';
 
-                let status = "ปกติ";
-                let statusColor = "bg-green-100 text-green-700 border-green-200";
+    const dateStr  = String(row['ClockDate']    || '').trim();
+    const timeStr  = String(row['ClockTime']    || '').trim();
+    const clockCode= String(row['ClockCode']    || '').trim();
+    const clockName= String(row['ClockName']    || '').trim();
+    const location = String(row['LocationName'] || '').trim();
 
-                const isLate = firstIn > "09:30";
-                const isEarly = lastOut < "18:30" && item.times.length > 1;
-                const isIncomplete = item.times.length === 1;
+    if (!empCode || !dateStr || !timeStr) return;
 
-                if (isIncomplete) {
-                    status = "ลืมเช็คเอาท์"; statusColor = "bg-gray-100 text-gray-700 border-gray-200";
-                } else if (isLate && isEarly) {
-                    status = "สาย & กลับก่อน"; statusColor = "bg-red-100 text-red-700 border-red-200";
-                } else if (isLate) {
-                    status = "มาสาย"; statusColor = "bg-rose-100 text-rose-700 border-rose-200";
-                } else if (isEarly) {
-                    status = "กลับก่อน"; statusColor = "bg-amber-100 text-amber-700 border-amber-200";
-                }
+    const key = empCode + '|' + dateStr;
+    if (!grouped[key]) {
+      grouped[key] = { code: empCode, name: empName, date: dateStr, punches: [], locations: new Set() };
+    }
+    grouped[key].punches.push({ time: timeStr, clockCode, clockName });
+    if (location) grouped[key].locations.add(location);
+  });
 
-                return {
-                    employee: item.employee,
-                    date: item.date,
-                    firstIn,
-                    lastOut: isIncomplete ? "-" : lastOut,
-                    status, statusColor,
-                    location: locs.length > 0 ? locs[0] : "-",
-                    moreLocs: locs.length > 1 ? locs.length - 1 : 0
-                };
-            });
+  allData = [];
+  const empMap = {}; // code → { name, dept, dates }
 
-            processedData.sort((a, b) => new Date(a.date) - new Date(b.date));
-            renderTable(processedData);
-        }
+  Object.values(grouped).forEach(item => {
+    item.punches.sort((a, b) => a.time.localeCompare(b.time));
 
-        function renderTable(data) {
-            tableBody.innerHTML = '';
-            data.forEach(row => {
-                const firstChar = row.employee.charAt(0);
-                const inColor = row.firstIn > "09:30" ? "text-rose-600 font-medium" : "text-slate-700";
-                const outColor = row.lastOut !== "-" && row.lastOut < "18:30" ? "text-amber-600 font-medium" : "text-slate-700";
-                
-                const tr = document.createElement('tr');
-                tr.className = "hover:bg-slate-50/50 transition-colors";
-                tr.innerHTML = `
-                    <td class="py-4 px-6">
-                        <div class="flex items-center gap-3">
-                            <div class="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-bold text-xs">${firstChar}</div>
-                            <span class="font-medium text-slate-700">${row.employee}</span>
-                        </div>
-                    </td>
-                    <td class="py-4 px-6 text-slate-600">${row.date}</td>
-                    <td class="py-4 px-6 font-mono ${inColor}">${row.firstIn}</td>
-                    <td class="py-4 px-6 font-mono ${outColor}">${row.lastOut}</td>
-                    <td class="py-4 px-6">
-                        <span class="px-3 py-1 text-xs font-semibold rounded-full border ${row.statusColor}">${row.status}</span>
-                    </td>
-                    <td class="py-4 px-6 text-slate-600 text-sm">
-                        <div class="flex items-center gap-2">
-                            <span class="truncate max-w-[200px] block" title="${row.location}">${row.location}</span>
-                            ${row.moreLocs > 0 ? `<span class="text-xs bg-slate-100 text-slate-500 px-2 py-0.5 rounded-md">+${row.moreLocs}</span>` : ''}
-                        </div>
-                    </td>
-                `;
-                tableBody.appendChild(tr);
-            });
-            tableContainer.classList.remove('hidden');
-        }
-    </script>
+    const firstPunch = item.punches[0];
+    const lastPunch  = item.punches[item.punches.length - 1];
+    const timeIn     = firstPunch.time;
+    const timeOut    = item.punches.length > 1 ? lastPunch.time : '';
+    const clockCodeIn   = firstPunch.clockCode;
+    const clockNameIn   = firstPunch.clockName;
+    const clockCodeOut  = item.punches.length > 1 ? lastPunch.clockCode : '';
+    const clockNameOut  = item.punches.length > 1 ? lastPunch.clockName : '';
+    const locs = Array.from(item.locations);
+
+    // Determine status
+    let status = 'ปกติ';
+    const inMinutes  = toMinutes(timeIn);
+    const outMinutes = timeOut ? toMinutes(timeOut) : null;
+    const shiftStartMins = toMinutes(SHIFT_START);
+    const shiftEndMins   = toMinutes(SHIFT_END);
+    const lateThresh     = shiftStartMins + LATE_GRACE;
+
+    const isLate       = inMinutes > lateThresh;
+    const isEarly      = outMinutes !== null && outMinutes < shiftEndMins;
+    const isMissedOut  = !timeOut && item.punches.length === 1;
+    const lateMins     = isLate ? inMinutes - shiftStartMins : 0;
+
+    if (isMissedOut)        status = 'ลืมตอกออก';
+    else if (isLate && isEarly) status = 'สาย & กลับก่อน';
+    else if (isLate)        status = 'มาสาย';
+    else if (isEarly)       status = 'กลับก่อน';
+
+    // Dept: derive from ClockName in if available
+    const dept = clockNameIn || '';
+
+    const rec = {
+      code: item.code,
+      name: item.name,
+      dept,
+      date: item.date,
+      timeIn,
+      timeOut: timeOut || '—',
+      clockCodeIn,
+      clockNameIn,
+      clockCodeOut,
+      clockNameOut,
+      status,
+      lateMins,
+      location: locs[0] || '—',
+      moreLocs: locs.length > 1 ? locs.length - 1 : 0,
+      _locs: locs,
+    };
+    allData.push(rec);
+
+    // Build empMap for matrix
+    if (!empMap[item.code]) {
+      empMap[item.code] = { code: item.code, name: item.name, lateCount: 0, lateMins: 0, missed: 0, absent: 0, records: [] };
+    }
+    const em = empMap[item.code];
+    if (status === 'มาสาย' || status === 'สาย & กลับก่อน') { em.lateCount++; em.lateMins += lateMins; }
+    if (status === 'ลืมตอกออก') em.missed++;
+    em.records.push(rec);
+  });
+
+  // Sort allData by date
+  allData.sort((a, b) => parseDateSort(a.date) - parseDateSort(b.date));
+
+  // Build matrix
+  matrixData = Object.values(empMap).sort((a, b) => a.code.localeCompare(b.code));
+
+  // Build dept list
+  const deptSet = new Set();
+  allData.forEach(r => { if (r.dept) deptSet.add(r.dept); });
+  allDepts = Array.from(deptSet).sort();
+
+  // Populate dropdowns
+  populateDropdowns();
+  renderSummary();
+  applyFilters();
+  renderMatrixTable();
+  renderReportTab();
+
+  document.getElementById('uploadSection').style.display = 'none';
+  document.getElementById('summaryGrid').style.display   = 'grid';
+  document.getElementById('mainContent').style.display   = 'block';
+  document.getElementById('exportBtn').style.display     = 'inline-flex';
+}
+
+// ─── Helpers ─────────────────────────────────────────────────
+function toMinutes(t) {
+  if (!t) return 0;
+  const [h, m] = t.split(':').map(Number);
+  return h * 60 + m;
+}
+function parseDateSort(d) {
+  if (!d) return 0;
+  // Support DD/MM/YYYY or YYYY-MM-DD
+  const p = d.split('/');
+  if (p.length === 3) return new Date(`${p[2]}-${p[1]}-${p[0]}`).getTime();
+  return new Date(d).getTime();
+}
+
+// ─── Dropdowns ───────────────────────────────────────────────
+function populateDropdowns() {
+  const deptOpt = `<option value="">ทุกแผนก</option>` + allDepts.map(d => `<option value="${d}">${d}</option>`).join('');
+  ['deptSelectAtt','deptSelectMatrix','deptSelectReport'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.innerHTML = deptOpt;
+  });
+
+  const emps = [...new Map(allData.map(r => [r.code, r])).values()].sort((a,b) => a.code.localeCompare(b.code));
+  const empOpt = `<option value="">เลือกพนักงาน</option>` + emps.map(e => `<option value="${e.code}">${e.code} – ${e.name}</option>`).join('');
+  ['empSelectAtt','empSelectMatrix'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.innerHTML = empOpt;
+  });
+}
+
+function handleEmpSelect(val) {
+  document.getElementById('empSelectAtt').value    = val;
+  document.getElementById('empSelectMatrix').value = val;
+  applyFilters(); renderMatrixTable();
+}
+
+// ─── Summary cards ────────────────────────────────────────────
+function renderSummary() {
+  const counts = { ปกติ: 0, มาสาย: 0, ลืมตอกออก: 0, ขาด: 0, 'สาย & กลับก่อน': 0 };
+  allData.forEach(r => { if (counts[r.status] !== undefined) counts[r.status]++; else counts['ขาด']++; });
+
+  const cards = [
+    { id: 'ปกติ',          label: 'ปกติ',         val: counts['ปกติ'],            col: '#166534' },
+    { id: 'มาสาย',         label: 'มาสาย',        val: counts['มาสาย'],           col: '#92400e' },
+    { id: 'สาย & กลับก่อน', label: 'สาย & กลับก่อน', val: counts['สาย & กลับก่อน'], col: '#b45309' },
+    { id: 'ลืมตอกออก',    label: 'ลืมตอกออก',    val: counts['ลืมตอกออก'],      col: '#9a3412' },
+    { id: 'กลับก่อน',      label: 'กลับก่อน',     val: allData.filter(r=>r.status==='กลับก่อน').length, col: '#78350f' },
+  ];
+  document.getElementById('summaryGrid').innerHTML = cards.map(c => `
+    <div id="card-${c.id}" onclick="toggleStatusFilter('${c.id}')" class="stat-card">
+      <div class="stat-label">${c.label}</div>
+      <div class="stat-value" style="color:${c.col}">${c.val}</div>
+    </div>`).join('');
+}
+
+function toggleStatusFilter(status) {
+  activeStatusFilter = activeStatusFilter === status ? '' : status;
+  document.querySelectorAll('.stat-card').forEach(el => el.classList.remove('active'));
+  if (activeStatusFilter) document.getElementById('card-' + activeStatusFilter)?.classList.add('active');
+  switchTab('att');
+  applyFilters();
+}
+
+// ─── Filters ─────────────────────────────────────────────────
+function applyFilters() {
+  const q       = document.getElementById('searchInput').value.toLowerCase();
+  const selEmp  = document.getElementById('empSelectAtt').value;
+  const selDept = document.getElementById('deptSelectAtt').value;
+
+  filteredData = allData.filter(r => {
+    const mText   = !q || [r.code, r.name, r.dept, r.date, r.timeIn, r.timeOut, r.status, r.clockCodeIn, r.clockNameIn, r.location]
+                         .join(' ').toLowerCase().includes(q);
+    const mEmp    = !selEmp  || r.code === selEmp;
+    const mDept   = !selDept || r.dept === selDept;
+    const mStatus = !activeStatusFilter || r.status === activeStatusFilter;
+    return mText && mEmp && mDept && mStatus;
+  });
+
+  // Active filter badges
+  const bc = document.getElementById('activeFilterBadge'); bc.innerHTML = '';
+  if (activeStatusFilter) bc.innerHTML += `<span class="filter-tag">สถานะ: ${activeStatusFilter}</span>`;
+  if (selEmp)             bc.innerHTML += `<span class="filter-tag">พนักงาน: ${selEmp}</span>`;
+  if (selDept)            bc.innerHTML += `<span class="filter-tag">แผนก: ${selDept}</span>`;
+  if (q)                  bc.innerHTML += `<span class="filter-tag">ค้นหา: "${q}"</span>`;
+
+  currentPage = 1;
+  renderTable();
+}
+
+// ─── Attendance table ─────────────────────────────────────────
+function badgeClass(s) {
+  if (s === 'ปกติ')              return 'badge-normal';
+  if (s === 'มาสาย' || s === 'สาย & กลับก่อน') return 'badge-late';
+  if (s.includes('ลืม'))        return 'badge-missed';
+  if (s === 'กลับก่อน')         return 'badge-early';
+  return 'badge-absent';
+}
+
+function sortBy(col) {
+  if (sortCol === col) sortDir = sortDir === 'asc' ? 'desc' : 'asc';
+  else { sortCol = col; sortDir = 'asc'; }
+  ['date','code','name','status'].forEach(c => {
+    const th = document.getElementById('th-'+c); if (!th) return;
+    th.classList.remove('sort-asc','sort-desc');
+    if (c === sortCol) th.classList.add(sortDir === 'asc' ? 'sort-asc' : 'sort-desc');
+  });
+  filteredData.sort((a, b) => {
+    let va = a[sortCol === 'date' ? 'date' : sortCol] || '';
+    let vb = b[sortCol === 'date' ? 'date' : sortCol] || '';
+    if (sortCol === 'date') { va = parseDateSort(va); vb = parseDateSort(vb); return sortDir === 'asc' ? va - vb : vb - va; }
+    const cmp = va.localeCompare(vb, 'th');
+    return sortDir === 'asc' ? cmp : -cmp;
+  });
+  currentPage = 1; renderTable();
+}
+
+function renderTable() {
+  const tbody = document.querySelector('#attendanceTable tbody'); tbody.innerHTML = '';
+  const start = (currentPage - 1) * ROWS_PER_PAGE;
+  const end   = Math.min(start + ROWS_PER_PAGE, filteredData.length);
+
+  if (!filteredData.length) {
+    tbody.innerHTML = `<tr><td colspan="11" style="text-align:center;padding:40px;color:var(--muted);">ไม่พบข้อมูล</td></tr>`;
+    document.getElementById('pageInfo').innerText = '';
+    return;
+  }
+
+  filteredData.slice(start, end).forEach(r => {
+    const inColor  = toMinutes(r.timeIn) > toMinutes(SHIFT_START) + LATE_GRACE ? 'color:var(--c-late);font-weight:600;' : '';
+    const outColor = r.timeOut !== '—' && toMinutes(r.timeOut) < toMinutes(SHIFT_END) ? 'color:#78350f;font-weight:600;' : '';
+    tbody.innerHTML += `<tr>
+      <td style="font-size:12px;color:var(--text2);font-family:'Inter',monospace;">${r.date}</td>
+      <td style="font-weight:600;font-size:12px;">${r.code}</td>
+      <td>
+        <div style="font-weight:500;">${r.name}</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:1px;">${r.dept || '—'}</div>
+      </td>
+      <td style="text-align:center;font-family:'Inter',monospace;font-size:12px;${inColor}">${r.timeIn}</td>
+      <td style="text-align:center;font-family:'Inter',monospace;font-size:12px;${outColor}">${r.timeOut}</td>
+      <td style="font-size:12px;color:var(--text2);">${r.clockCodeIn || '—'}</td>
+      <td style="font-size:12px;color:var(--text2);">${r.clockNameIn || '—'}</td>
+      <td style="font-size:12px;color:var(--text2);">${r.clockCodeOut || '—'}</td>
+      <td style="font-size:12px;color:var(--text2);">${r.clockNameOut || '—'}</td>
+      <td style="text-align:center;">
+        <span class="badge ${badgeClass(r.status)}">${r.status}</span>
+        ${r.lateMins > 0 ? `<div style="font-size:10px;color:var(--c-late);margin-top:2px;">+${r.lateMins} น.</div>` : ''}
+      </td>
+      <td style="font-size:12px;color:var(--text2);">
+        ${r.location}${r.moreLocs > 0 ? ` <span style="font-size:10px;background:var(--surface2);color:var(--muted);padding:1px 5px;border-radius:4px;">+${r.moreLocs}</span>` : ''}
+      </td>
+    </tr>`;
+  });
+
+  document.getElementById('pageInfo').innerText = `${start+1}–${end} จาก ${filteredData.length.toLocaleString()} รายการ`;
+  document.getElementById('prevBtn').disabled = currentPage === 1;
+  document.getElementById('nextBtn').disabled = end >= filteredData.length;
+}
+
+// ─── Matrix table ─────────────────────────────────────────────
+function renderMatrixTable() {
+  const q       = document.getElementById('matrixSearch').value.toLowerCase();
+  const selEmp  = document.getElementById('empSelectMatrix').value;
+  const selDept = document.getElementById('deptSelectMatrix').value;
+
+  const data = matrixData.filter(e =>
+    (!selEmp  || e.code === selEmp) &&
+    (!selDept || e.records.some(r => r.dept === selDept)) &&
+    (!q       || (e.code + ' ' + e.name).toLowerCase().includes(q))
+  );
+
+  const thead = document.querySelector('#matrixTable thead');
+  const tbody = document.querySelector('#matrixTable tbody');
+  thead.innerHTML = `<tr>
+    <th class="sticky-head" style="text-align:left;min-width:80px;">รหัส</th>
+    <th class="sticky-head" style="text-align:left;min-width:160px;">ชื่อ</th>
+    <th style="text-align:center;color:var(--c-late);">สาย (ครั้ง)</th>
+    <th style="text-align:center;color:var(--c-late);">สาย (นาที)</th>
+    <th style="text-align:center;color:var(--c-miss);">ลืมตอก</th>
+    <th style="text-align:center;color:var(--c-abs);">ขาด</th>
+    <th style="text-align:center;">ปกติ</th>
+    <th style="text-align:center;position:sticky;right:0;background:var(--surface2);border-left:1px solid var(--border);"></th>
+  </tr>`;
+
+  tbody.innerHTML = '';
+  if (!data.length) {
+    tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:40px;color:var(--muted);">ไม่พบข้อมูล</td></tr>`;
+    return;
+  }
+
+  data.forEach(e => {
+    const normal = e.records.filter(r => r.status === 'ปกติ').length;
+    tbody.innerHTML += `<tr>
+      <td class="sticky-col" style="font-weight:600;font-size:12px;">${e.code}</td>
+      <td class="sticky-col" style="font-weight:500;">${e.name}</td>
+      <td style="text-align:center;font-weight:600;color:${e.lateCount>0?'var(--c-late)':'var(--border2)'};">${e.lateCount || '—'}</td>
+      <td style="text-align:center;color:${e.lateMins>0?'var(--c-late)':'var(--border2)'};">${e.lateMins || '—'}</td>
+      <td style="text-align:center;font-weight:600;color:${e.missed>0?'var(--c-miss)':'var(--border2)'};">${e.missed || '—'}</td>
+      <td style="text-align:center;font-weight:600;color:${e.absent>0?'var(--c-abs)':'var(--border2)'};">${e.absent || '—'}</td>
+      <td style="text-align:center;color:${normal>0?'var(--c-ok)':'var(--border2)'};">${normal || '—'}</td>
+      <td style="text-align:center;position:sticky;right:0;background:var(--surface);border-left:1px solid var(--border);">
+        <button onclick="openModal('${e.code}','${e.name}')" class="btn btn-ghost" style="font-size:11px;padding:4px 10px;">ประวัติ</button>
+      </td>
+    </tr>`;
+  });
+}
+
+// ─── Report tab ───────────────────────────────────────────────
+function toggleReportFilter(type) {
+  if (reportFilterSet.has(type)) reportFilterSet.delete(type);
+  else reportFilterSet.add(type);
+  ['late','absent','missed'].forEach(t => {
+    const btn = document.getElementById('rf-'+t);
+    if (btn) {
+      btn.style.background      = reportFilterSet.has(t) ? 'var(--accent)' : '';
+      btn.style.color           = reportFilterSet.has(t) ? '#fff' : '';
+      btn.style.borderColor     = reportFilterSet.has(t) ? 'var(--accent)' : '';
+    }
+  });
+  renderReportTab();
+}
+
+function renderReportTab() {
+  const q       = document.getElementById('reportSearch').value.toLowerCase();
+  const selDept = document.getElementById('deptSelectReport').value;
+  const list    = document.getElementById('reportList'); list.innerHTML = '';
+
+  const people = matrixData.filter(e => {
+    const hasLate   = reportFilterSet.has('late')   && e.lateCount > 0;
+    const hasMissed = reportFilterSet.has('missed') && e.missed > 0;
+    const hasAbsent = reportFilterSet.has('absent') && e.absent > 0;
+    const matchDept = !selDept || e.records.some(r => r.dept === selDept);
+    const matchQ    = !q || (e.code + ' ' + e.name).toLowerCase().includes(q);
+    return matchDept && matchQ && (hasLate || hasMissed || hasAbsent);
+  });
+
+  if (!people.length) {
+    list.innerHTML = `<div style="text-align:center;padding:48px;color:var(--muted);font-size:13px;">ไม่พบข้อมูล</div>`;
+    return;
+  }
+
+  people.forEach(e => {
+    let chips = '';
+    if (reportFilterSet.has('late')   && e.lateCount > 0) chips += `<span class="tag-late">⏱ สาย ${e.lateCount} ครั้ง · ${e.lateMins} นาที</span>`;
+    if (reportFilterSet.has('missed') && e.missed > 0)    chips += `<span class="tag-missed">○ ลืมตอก ${e.missed} ครั้ง</span>`;
+    if (reportFilterSet.has('absent') && e.absent > 0)    chips += `<span class="tag-absent">✗ ขาด ${e.absent} วัน</span>`;
+
+    const lateRecs   = e.records.filter(r => r.status.includes('สาย'));
+    const missedRecs = e.records.filter(r => r.status.includes('ลืม'));
+
+    let detail = '';
+    if (reportFilterSet.has('late') && lateRecs.length)
+      detail += `<div style="margin-top:6px;font-size:11px;color:var(--muted);">
+        <span style="color:var(--c-late);font-weight:600;">สาย</span>
+        <span style="margin-left:6px;">${lateRecs.map(r=>`${r.date} <span style="color:var(--c-late);font-weight:600;">${r.timeIn}</span> (+${r.lateMins}น.)`).join(' &nbsp;·&nbsp; ')}</span>
+      </div>`;
+    if (reportFilterSet.has('missed') && missedRecs.length)
+      detail += `<div style="margin-top:4px;font-size:11px;color:var(--muted);">
+        <span style="color:var(--c-miss);font-weight:600;">ลืมตอก</span>
+        <span style="margin-left:6px;">${missedRecs.map(r=>`${r.date}`).join(' &nbsp;·&nbsp; ')}</span>
+      </div>`;
+
+    list.innerHTML += `
+      <div class="person-row">
+        <div style="display:flex;flex-wrap:wrap;align-items:center;gap:10px;">
+          <div>
+            <span style="font-weight:700;font-size:13px;">${e.code}</span>
+            <span style="margin-left:8px;font-size:13px;">${e.name}</span>
+          </div>
+          <div style="display:flex;flex-wrap:wrap;gap:6px;">${chips}</div>
+          <button onclick="openModal('${e.code}','${e.name}')" class="btn btn-ghost" style="margin-left:auto;font-size:11px;padding:4px 12px;">ประวัติ</button>
+        </div>
+        ${detail}
+      </div>`;
+  });
+}
+
+// ─── Modal ────────────────────────────────────────────────────
+function openModal(code, name) {
+  document.getElementById('modalTitle').innerText = `${code}  ·  ${name}`;
+  const tbody = document.querySelector('#modalTable tbody'); tbody.innerHTML = '';
+  const recs = allData.filter(r => r.code === code && r.status !== 'ปกติ');
+  if (!recs.length) {
+    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:32px;color:var(--muted);">ไม่มีประวัติความผิดปกติ</td></tr>`;
+  } else {
+    recs.forEach(r => {
+      tbody.innerHTML += `<tr>
+        <td style="font-size:12px;color:var(--text2);font-family:'Inter',monospace;">${r.date}</td>
+        <td><span class="badge ${badgeClass(r.status)}">${r.status}</span></td>
+        <td style="font-family:'Inter',monospace;font-size:12px;">${r.timeIn}</td>
+        <td style="font-family:'Inter',monospace;font-size:12px;">${r.timeOut}</td>
+        <td style="font-size:12px;color:var(--text2);">${r.clockCodeIn || '—'}</td>
+        <td style="font-size:12px;color:var(--text2);">${r.clockNameIn || '—'}</td>
+      </tr>`;
+    });
+  }
+  document.getElementById('leaveModal').classList.add('open');
+}
+function closeModal() { document.getElementById('leaveModal').classList.remove('open'); }
+
+// ─── Export ───────────────────────────────────────────────────
+function exportExcel() {
+  const isMatrix = document.getElementById('tab-matrix').classList.contains('active');
+  let arr, filename;
+
+  if (isMatrix) {
+    arr = matrixData.map(e => ({
+      'รหัสพนักงาน': e.code,
+      'ชื่อ':        e.name,
+      'สาย (ครั้ง)': e.lateCount,
+      'สาย (นาที)':  e.lateMins,
+      'ลืมตอก':     e.missed,
+      'ขาด':         e.absent,
+    }));
+    filename = 'Summary_Matrix.xlsx';
+  } else {
+    arr = filteredData.map(r => ({
+      'วันที่':            r.date,
+      'รหัสพนักงาน':      r.code,
+      'ชื่อ':              r.name,
+      'แผนก':              r.dept,
+      'เวลาเข้า':          r.timeIn,
+      'เวลาออก':           r.timeOut,
+      'ClockCode (เข้า)':  r.clockCodeIn,
+      'ClockName (เข้า)':  r.clockNameIn,
+      'ClockCode (ออก)':   r.clockCodeOut,
+      'ClockName (ออก)':   r.clockNameOut,
+      'สถานะ':             r.status,
+      'สาย (นาที)':        r.lateMins || 0,
+      'สถานที่':           r.location,
+    }));
+    filename = 'Attendance_Report.xlsx';
+  }
+
+  if (!arr.length) { alert('ไม่มีข้อมูลสำหรับ Export'); return; }
+  const ws = XLSX.utils.json_to_sheet(arr);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Report');
+  XLSX.writeFile(wb, filename);
+}
+
+// ─── Utilities ───────────────────────────────────────────────
+function switchTab(t) {
+  ['att','matrix','report'].forEach(id => {
+    document.getElementById('view-'+id).style.display = id === t ? 'block' : 'none';
+    document.getElementById('tab-'+id).classList.toggle('active', id === t);
+  });
+}
+function clearFilters() {
+  activeStatusFilter = '';
+  ['searchInput','matrixSearch','reportSearch'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+  ['empSelectAtt','empSelectMatrix','deptSelectAtt','deptSelectMatrix','deptSelectReport'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+  document.querySelectorAll('.stat-card').forEach(el => el.classList.remove('active'));
+  applyFilters(); renderMatrixTable(); renderReportTab();
+}
+function changePage(d) { currentPage += d; renderTable(); }
+</script>
 </body>
 </html>
