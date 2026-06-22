@@ -160,7 +160,8 @@
     .row-emp  { padding: 12px 14px; vertical-align: top; border-right: 1px solid var(--line); }
     .row-emp .name { font-weight: 600; font-size: 13px; }
     .row-emp .code { font-size: 11px; color: var(--muted); font-family: 'IBM Plex Mono', monospace; margin-top: 1px; }
-    .punches-cell { padding: 0; }
+
+    /* Modal punch styles */
     .punch-row {
       display: flex;
       align-items: center;
@@ -175,6 +176,12 @@
     .punch-code { color: var(--muted); min-width: 60px; margin-left: 12px; }
     .punch-name { color: var(--ink2); flex: 1; margin-left: 8px; }
     .punch-location { color: var(--muted); font-size: 11px; margin-left: 8px; text-align: right; flex-shrink: 0; max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+    /* New split cell styles */
+    .punch-cell-split { padding: 12px 14px; vertical-align: top; border-right: 1px solid var(--line); }
+    .punch-time-large { font-family: 'IBM Plex Mono', monospace; font-size: 14px; font-weight: 600; color: var(--ink); }
+    .punch-time-large.late { color: var(--red); }
+    .punch-loc-small { color: var(--muted); font-size: 11px; margin-top: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 140px; }
 
     /* badges */
     .badge { display: inline-block; padding: 2px 8px; border-radius: 6px; font-size: 11px; font-weight: 600; border: 1px solid; }
@@ -238,7 +245,6 @@
 </head>
 <body>
 
-<!-- Topbar -->
 <div class="topbar">
   <div class="topbar-brand">
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#7ea8f8" stroke-width="2.2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
@@ -260,7 +266,6 @@
 
 <div class="main">
 
-  <!-- Upload zone -->
   <div id="uploadSection">
     <div class="upload-zone" id="dropzone" onclick="document.getElementById('fileInput').click()">
       <div class="upload-icon">
@@ -274,12 +279,10 @@
     </div>
   </div>
 
-  <!-- Stats -->
   <div id="statsSection" style="display:none;">
     <div class="stat-strip" id="statStrip"></div>
   </div>
 
-  <!-- Table panel -->
   <div id="tableSection" style="display:none;" class="panel">
     <div class="toolbar">
       <div class="search-wrap">
@@ -299,7 +302,8 @@
           <tr>
             <th style="min-width:100px;">วันที่</th>
             <th style="min-width:180px;">พนักงาน</th>
-            <th>บันทึกการตอกบัตร</th>
+            <th style="min-width:140px;">เวลาเข้า (เช้า)</th>
+            <th style="min-width:140px;">เวลาออก (บ่าย)</th>
             <th style="min-width:100px;text-align:center;border-left:1px solid var(--line);">สถานะ</th>
           </tr>
         </thead>
@@ -318,13 +322,12 @@
 
 </div>
 
-<!-- Modal -->
 <div id="modal-overlay" onclick="if(event.target===this)closeModal()">
   <div class="modal-box">
     <div class="modal-head">
       <div>
         <div style="font-weight:700;font-size:14px;" id="modalTitle"></div>
-        <div style="font-size:11px;color:var(--muted);margin-top:2px;">ประวัติการตอกบัตร</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:2px;">ประวัติการตอกบัตรทั้งหมดในวันนั้น</div>
       </div>
       <button onclick="closeModal()" class="btn btn-ghost" style="padding:4px 8px;">✕</button>
     </div>
@@ -428,22 +431,17 @@ function buildGroups(raw) {
 
 // ─── Date helpers ────────────────────────────────────────────
 function formatDate(d) {
-  // Accept YYYY-MM-DD or DD/MM/YYYY or serial (number)
   if (!d) return '';
   d = String(d).trim();
-  // already dd/mm/yyyy
   if (/^\d{2}\/\d{2}\/\d{4}$/.test(d)) return d;
-  // yyyy-mm-dd
   if (/^\d{4}-\d{2}-\d{2}/.test(d)) {
     const [y, mo, day] = d.slice(0, 10).split('-');
     return `${day}/${mo}/${y}`;
   }
-  // mm/dd/yyyy (US)
   if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(d)) {
     const p = d.split('/');
     return `${p[1].padStart(2,'0')}/${p[0].padStart(2,'0')}/${p[2]}`;
   }
-  // Excel serial number
   if (/^\d{4,6}$/.test(d)) {
     const dt = new Date(Math.round((+d - 25569) * 86400 * 1000));
     const dd = String(dt.getUTCDate()).padStart(2,'0');
@@ -503,7 +501,6 @@ function applyFilters() {
     return mQ && mS;
   });
 
-  // Pills
   const pills = document.getElementById('filterPills'); pills.innerHTML = '';
   if (activeStatus) pills.innerHTML += `<span class="filter-pill">สถานะ: ${activeStatus} <button onclick="setStatusFilter('')">×</button></span>`;
   if (q)            pills.innerHTML += `<span class="filter-pill">"${q}" <button onclick="document.getElementById('searchInput').value='';applyFilters()">×</button></span>`;
@@ -531,7 +528,7 @@ function renderTable() {
   tbody.innerHTML = '';
 
   if (!filtered.length) {
-    tbody.innerHTML = `<tr><td colspan="4"><div class="empty">ไม่พบข้อมูล</div></td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="5"><div class="empty">ไม่พบข้อมูล</div></td></tr>`;
     updatePagination();
     return;
   }
@@ -540,30 +537,36 @@ function renderTable() {
   const end   = Math.min(start + PER_PAGE, filtered.length);
 
   filtered.slice(start, end).forEach(g => {
-    const punchesHtml = g.punches.map(p => {
-      const [ph, pm] = p.time.split(':').map(Number);
-      const pMins = ph * 60 + pm;
-      const shiftMins = SHIFT_START_H * 60 + SHIFT_START_M + LATE_GRACE_MINS;
-      const isFirstLate = g.status === 'มาสาย' && p === g.punches[0];
-      const timeCls = isFirstLate ? 'punch-time late' : 'punch-time';
-      return `<div class="punch-row">
-        <span class="${timeCls}">${p.time}</span>
-        <span class="punch-code">${p.clockCode || '—'}</span>
-        <span class="punch-name">${p.clockName || '—'}</span>
-        <span class="punch-location" title="${p.location}">${p.location || '—'}</span>
-      </div>`;
-    }).join('');
+    
+    // ดึงข้อมูลตอกบัตรครั้งแรกสุด (เข้า) และครั้งสุดท้าย (ออก)
+    const firstPunch = g.punches[0];
+    const lastPunch = g.punches.length > 1 ? g.punches[g.punches.length - 1] : null;
+
+    // ฟังก์ชันช่วยสร้าง HTML สำหรับช่องเวลา
+    const renderPunchCell = (p, isFirst) => {
+      if (!p) return '<span style="color:var(--muted)">—</span>';
+      const isLate = isFirst && g.status === 'มาสาย';
+      const timeCls = isLate ? 'punch-time-large late' : 'punch-time-large';
+      return `
+        <div class="${timeCls}">${p.time}</div>
+        <div class="punch-loc-small" title="${p.location}">${p.location || '—'}</div>
+      `;
+    };
+
+    const morningHtml = renderPunchCell(firstPunch, true);
+    const afternoonHtml = renderPunchCell(lastPunch, false);
 
     const badgeHtml = `<span class="badge ${badgeCls(g.status)}">${g.status}</span>` +
       (g.lateMins > 0 ? `<div class="late-mins">+${g.lateMins} นาที</div>` : '');
 
-    tbody.innerHTML += `<tr>
+    tbody.innerHTML += `<tr style="cursor: pointer;" onclick="openModal('${g.code}', '${g.name}')" title="คลิกเพื่อดูประวัติการตอกบัตรทั้งหมดในวันนี้">
       <td class="row-date">${g.date}</td>
       <td class="row-emp">
         <div class="name">${g.name}</div>
         <div class="code">${g.code}</div>
       </td>
-      <td class="punches-cell">${punchesHtml}</td>
+      <td class="punch-cell-split">${morningHtml}</td>
+      <td class="punch-cell-split">${afternoonHtml}</td>
       <td class="status-cell" style="text-align:center;">${badgeHtml}</td>
     </tr>`;
   });
@@ -574,8 +577,8 @@ function renderTable() {
 function updatePagination(start, end) {
   const total = filtered.length;
   const info  = total ? `${(start||0)+1}–${end||0} จาก ${total.toLocaleString()} รายการ` : '';
-  document.getElementById('pageInfo').innerText       = info;
-  document.getElementById('pageInfoBottom').innerText = info;
+  document.getElementById('pageInfo').innerText        = info;
+  document.getElementById('pageInfoBottom').innerText  = info;
   document.getElementById('prevBtn').disabled = currentPage === 1;
   document.getElementById('nextBtn').disabled = !filtered.length || (end >= filtered.length);
 }
@@ -586,18 +589,20 @@ function exportExcel() {
   if (!filtered.length) { alert('ไม่มีข้อมูล'); return; }
   const rows = [];
   filtered.forEach(g => {
-    g.punches.forEach(p => {
-      rows.push({
-        'วันที่':           g.date,
-        'รหัสพนักงาน':     g.code,
-        'ชื่อพนักงาน':     g.name,
-        'เวลาตอกบัตร':     p.time,
-        'ClockCode':       p.clockCode,
-        'ClockName':       p.clockName,
-        'สถานที่':         p.location,
-        'สถานะวัน':        g.status,
-        'สาย (นาที)':      g.lateMins || 0,
-      });
+    // ส่งออกโดยใช้เวลาเข้าและออกแทน
+    const firstPunch = g.punches[0];
+    const lastPunch = g.punches.length > 1 ? g.punches[g.punches.length - 1] : null;
+
+    rows.push({
+      'วันที่':           g.date,
+      'รหัสพนักงาน':     g.code,
+      'ชื่อพนักงาน':     g.name,
+      'เวลาเข้า (เช้า)':  firstPunch ? firstPunch.time : '—',
+      'เวลาออก (บ่าย)':   lastPunch ? lastPunch.time : '—',
+      'สถานที่ (เข้า)':  firstPunch ? firstPunch.location : '—',
+      'สถานที่ (ออก)':   lastPunch ? lastPunch.location : '—',
+      'สถานะวัน':        g.status,
+      'สาย (นาที)':      g.lateMins || 0,
     });
   });
   const ws = XLSX.utils.json_to_sheet(rows);
