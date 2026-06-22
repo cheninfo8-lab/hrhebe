@@ -142,8 +142,6 @@
     .punch-block:last-child { margin-bottom: 0; }
     .punch-time-large { font-family: 'IBM Plex Mono', monospace; font-size: 14px; font-weight: 600; color: var(--ink); }
     .punch-time-large.late { color: var(--red); }
-    
-    /* สไตล์ใหม่สำหรับ ClockCode และ ClockName */
     .punch-code-text { font-size: 11px; color: var(--ink2); font-weight: 500; margin-top: 2px; line-height: 1.4; }
     .punch-loc-small { color: var(--muted); font-size: 11px; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 220px; }
 
@@ -309,7 +307,6 @@ function buildGroups(raw) {
   let globalMin = null;
   let globalMax = null;
 
-  // 1. นำข้อมูลดิบมาจัดกลุ่ม
   raw.forEach(row => {
     const empRaw   = String(row['EmployeeCodeName'] || '').trim();
     const dash     = empRaw.indexOf('-');
@@ -318,7 +315,7 @@ function buildGroups(raw) {
     const dateRaw  = String(row['ClockDate']    || '').trim();
     const timeStr  = String(row['ClockTime']    || '').trim();
     const clockCode= String(row['ClockCode']    || '').trim(); 
-    const clockName= String(row['ClockName']    || '').trim(); // ดึง ClockName เข้ามาด้วย
+    const clockName= String(row['ClockName']    || '').trim();
     const location = String(row['LocationName'] || '').trim();
 
     if (!code || !dateRaw || !timeStr) return;
@@ -341,7 +338,6 @@ function buildGroups(raw) {
     }
   });
 
-  // 2. เติมเต็มวันที่ขาดหายแบบ "เต็มเดือน"
   if (globalMin && globalMax) {
     let startDate = new Date(globalMin);
     startDate.setDate(1); 
@@ -374,7 +370,6 @@ function buildGroups(raw) {
     });
   }
 
-  // 3. วิเคราะห์สถานะจากเวลาตอกบัตร
   allGroups = Object.values(map).map(g => {
     if (g.punches.length > 0) {
       g.punches.sort((a, b) => a.time.localeCompare(b.time));
@@ -501,7 +496,6 @@ function renderTable() {
         const isLate = isMorning && index === 0 && g.status === 'มาสาย';
         const timeCls = isLate ? 'punch-time-large late' : 'punch-time-large';
         
-        // จัดรูปแบบ ClockCode และ ClockName ให้แสดงเต็มๆ
         const codeDisplayArray = [];
         if (p.clockCode) codeDisplayArray.push(p.clockCode);
         if (p.clockName) codeDisplayArray.push(p.clockName);
@@ -554,46 +548,36 @@ function exportExcel() {
   if (!filtered.length) { alert('ไม่มีข้อมูล'); return; }
   const rows = [];
   
-  // เปลี่ยนระบบเป็น 1 บรรทัด ต่อ 1 การตอกบัตร (Detailed Export)
   filtered.forEach(g => {
-    if (g.punches.length === 0) {
-      // กรณีขาดงาน หรือ วันหยุด
-      rows.push({
-        'วันที่':           g.date,
-        'รหัสพนักงาน':     g.code,
-        'ชื่อพนักงาน':     g.name,
-        'รอบเวลา':         '—',
-        'เวลาตอกบัตร':     '—',
-        'Clock Code':     '—',
-        'Clock Name':     '—',
-        'สถานที่':         '—',
-        'สถานะวัน':        g.status,
-        'สาย (นาที)':      0,
-      });
-    } else {
-      // กรณีมีข้อมูลการตอกบัตร แจกแจงออกมาทีละรายการ
-      g.punches.forEach(p => {
-        const shift = p.time < "12:00" ? "เช้า" : "บ่าย";
-        rows.push({
-          'วันที่':           g.date,
-          'รหัสพนักงาน':     g.code,
-          'ชื่อพนักงาน':     g.name,
-          'รอบเวลา':         shift,
-          'เวลาตอกบัตร':     p.time,
-          'Clock Code':     p.clockCode || '—',
-          'Clock Name':     p.clockName || '—',
-          'สถานที่':         p.location || '—',
-          'สถานะวัน':        g.status,
-          'สาย (นาที)':      g.lateMins || 0,
-        });
-      });
-    }
+    // แยกเวลาตอกบัตรเป็นช่วงเช้าและบ่าย
+    const mPunches = g.punches.filter(p => p.time < "12:00");
+    const aPunches = g.punches.filter(p => p.time >= "12:00");
+
+    // ฟังก์ชันช่วยดึงข้อมูลและเชื่อมด้วยลูกน้ำ (กรณีมีการตอกมากกว่า 1 ครั้งในรอบนั้น)
+    const getM = (key) => mPunches.length ? mPunches.map(p => p[key] || '—').join(', ') : '—';
+    const getA = (key) => aPunches.length ? aPunches.map(p => p[key] || '—').join(', ') : '—';
+
+    rows.push({
+      'วันที่':           g.date,
+      'รหัสพนักงาน':     g.code,
+      'ชื่อพนักงาน':     g.name,
+      'เช้า':            getM('time'),
+      'Clock Code เช้า': getM('clockCode'),
+      'Clock Name เช้า': getM('clockName'),
+      'สถานที่ เช้า':     getM('location'),
+      'บ่าย':            getA('time'),
+      'Clock Code บ่าย': getA('clockCode'),
+      'Clock Name บ่าย': getA('clockName'),
+      'สถานที่ บ่าย':     getA('location'),
+      'สถานะวัน':        g.status,
+      'สาย (นาที)':      g.lateMins || 0,
+    });
   });
 
   const ws = XLSX.utils.json_to_sheet(rows);
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, 'Attendance Detailed');
-  XLSX.writeFile(wb, 'Attendance_Detailed.xlsx');
+  XLSX.writeFile(wb, 'Attendance_Export.xlsx');
 }
 </script>
 </body>
