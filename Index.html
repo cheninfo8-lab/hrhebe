@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HR Attendance Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+</head>
+<body class="bg-slate-50 font-sans text-slate-800 p-6 md:p-12 min-h-screen">
+    <div class="max-w-7xl mx-auto space-y-8">
+        
+        <header>
+            <h1 class="text-3xl font-bold tracking-tight text-slate-900">Attendance Analysis</h1>
+            <p class="text-slate-500 mt-2">อัปโหลดไฟล์บันทึกเวลาเพื่อวิเคราะห์การเข้างาน (กะงาน 09:30 - 18:30 น.)</p>
+        </header>
+
+        <div id="dropzone" class="border-2 border-dashed border-slate-300 bg-white hover:border-slate-400 rounded-xl p-10 text-center transition-all cursor-pointer">
+            <input type="file" id="fileInput" accept=".xlsx, .xls, .csv" class="hidden" />
+            <div class="flex flex-col items-center pointer-events-none">
+                <div class="p-4 bg-indigo-50 text-indigo-600 rounded-full mb-4">
+                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
+                </div>
+                <span class="text-lg font-medium text-slate-700">คลิกหรือลากไฟล์มาวางที่นี่</span>
+                <span class="text-sm text-slate-500 mt-2">รองรับไฟล์ Excel (.xlsx) และ CSV</span>
+                <p id="fileNameDisplay" class="mt-4 text-sm font-semibold text-indigo-600 hidden"></p>
+            </div>
+        </div>
+
+        <div id="tableContainer" class="hidden bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="bg-slate-50/80 border-b border-slate-200 text-sm uppercase tracking-wider text-slate-500">
+                            <th class="py-4 px-6 font-semibold">พนักงาน</th>
+                            <th class="py-4 px-6 font-semibold">วันที่</th>
+                            <th class="py-4 px-6 font-semibold">เวลาเข้า (In)</th>
+                            <th class="py-4 px-6 font-semibold">เวลาออก (Out)</th>
+                            <th class="py-4 px-6 font-semibold">สถานะ</th>
+                            <th class="py-4 px-6 font-semibold">สถานที่เช็คอิน</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody" class="divide-y divide-slate-100"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const fileInput = document.getElementById('fileInput');
+        const dropzone = document.getElementById('dropzone');
+        const fileNameDisplay = document.getElementById('fileNameDisplay');
+        const tableContainer = document.getElementById('tableContainer');
+        const tableBody = document.getElementById('tableBody');
+
+        dropzone.addEventListener('click', () => fileInput.click());
+        dropzone.addEventListener('dragover', (e) => { e.preventDefault(); dropzone.classList.add('border-indigo-500', 'bg-indigo-50'); });
+        dropzone.addEventListener('dragleave', () => dropzone.classList.remove('border-indigo-500', 'bg-indigo-50'); );
+        dropzone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropzone.classList.remove('border-indigo-500', 'bg-indigo-50');
+            if(e.dataTransfer.files.length) {
+                fileInput.files = e.dataTransfer.files;
+                processFile(e.dataTransfer.files[0]);
+            }
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            if(e.target.files.length) processFile(e.target.files[0]);
+        });
+
+        function processFile(file) {
+            fileNameDisplay.textContent = 'ไฟล์ที่เลือก: ' + file.name;
+            fileNameDisplay.classList.remove('hidden');
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const data = e.target.result;
+                const workbook = XLSX.read(data, { type: 'binary' });
+                const sheetName = workbook.SheetNames[0];
+                const sheet = workbook.Sheets[sheetName];
+                const rawData = XLSX.utils.sheet_to_json(sheet, { raw: false });
+                analyzeData(rawData);
+            };
+            reader.readAsBinaryString(file);
+        }
+
+        function analyzeData(rawData) {
+            const grouped = {};
+
+            rawData.forEach(row => {
+                const empName = row.EmployeeCodeName;
+                const dateStr = row.ClockDate;
+                const timeStr = row.ClockTime;
+                const location = row.LocationName;
+
+                if (!empName || !dateStr || !timeStr) return;
+
+                const key = empName + '_' + dateStr;
+                if (!grouped[key]) {
+                    grouped[key] = { employee: empName, date: dateStr, times: [], locations: new Set() };
+                }
+                grouped[key].times.push(timeStr);
+                if (location) grouped[key].locations.add(location);
+            });
+
+            const processedData = Object.values(grouped).map(item => {
+                item.times.sort();
+                const firstIn = item.times[0];
+                const lastOut = item.times[item.times.length - 1];
+                const locs = Array.from(item.locations);
+
+                let status = "ปกติ";
+                let statusColor = "bg-green-100 text-green-700 border-green-200";
+
+                const isLate = firstIn > "09:30";
+                const isEarly = lastOut < "18:30" && item.times.length > 1;
+                const isIncomplete = item.times.length === 1;
+
+                if (isIncomplete) {
+                    status = "ลืมเช็คเอาท์"; statusColor = "bg-gray-100 text-gray-700 border-gray-200";
+                } else if (isLate && isEarly) {
+                    status = "สาย & กลับก่อน"; statusColor = "bg-red-100 text-red-700 border-red-200";
+                } else if (isLate) {
+                    status = "มาสาย"; statusColor = "bg-rose-100 text-rose-700 border-rose-200";
+                } else if (isEarly) {
+                    status = "กลับก่อน"; statusColor = "bg-amber-100 text-amber-700 border-amber-200";
+                }
+
+                return {
+                    employee: item.employee,
+                    date: item.date,
+                    firstIn,
+                    lastOut: isIncomplete ? "-" : lastOut,
+                    status, statusColor,
+                    location: locs.length > 0 ? locs[0] : "-",
+                    moreLocs: locs.length > 1 ? locs.length - 1 : 0
+                };
+            });
+
+            processedData.sort((a, b) => new Date(a.date) - new Date(b.date));
+            renderTable(processedData);
+        }
+
+        function renderTable(data) {
+            tableBody.innerHTML = '';
+            data.forEach(row => {
+                const firstChar = row.employee.charAt(0);
+                const inColor = row.firstIn > "09:30" ? "text-rose-600 font-medium" : "text-slate-700";
+                const outColor = row.lastOut !== "-" && row.lastOut < "18:30" ? "text-amber-600 font-medium" : "text-slate-700";
+                
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-slate-50/50 transition-colors";
+                tr.innerHTML = `
+                    <td class="py-4 px-6">
+                        <div class="flex items-center gap-3">
+                            <div class="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-bold text-xs">${firstChar}</div>
+                            <span class="font-medium text-slate-700">${row.employee}</span>
+                        </div>
+                    </td>
+                    <td class="py-4 px-6 text-slate-600">${row.date}</td>
+                    <td class="py-4 px-6 font-mono ${inColor}">${row.firstIn}</td>
+                    <td class="py-4 px-6 font-mono ${outColor}">${row.lastOut}</td>
+                    <td class="py-4 px-6">
+                        <span class="px-3 py-1 text-xs font-semibold rounded-full border ${row.statusColor}">${row.status}</span>
+                    </td>
+                    <td class="py-4 px-6 text-slate-600 text-sm">
+                        <div class="flex items-center gap-2">
+                            <span class="truncate max-w-[200px] block" title="${row.location}">${row.location}</span>
+                            ${row.moreLocs > 0 ? `<span class="text-xs bg-slate-100 text-slate-500 px-2 py-0.5 rounded-md">+${row.moreLocs}</span>` : ''}
+                        </div>
+                    </td>
+                `;
+                tableBody.appendChild(tr);
+            });
+            tableContainer.classList.remove('hidden');
+        }
+    </script>
+</body>
+</html>
